@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { supabase } from "./lib/supabase";
+import { supabase } from "./supabase";
 
 const IMG_URL = "https://unjbdcjcfqmytapxyvuf.supabase.co/storage/v1/object/public/assets/IMG_8652.png";
 
