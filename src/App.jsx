@@ -134,7 +134,7 @@ function DetailSheet({ r, cat, onClose, onToggle, onDelete, onSaveNote, onSavePh
             style={{width:"100%",minHeight:80,padding:"10px 12px",borderRadius:12,
               border:"1.5px solid #d4e4d4",fontSize:14,background:"#f0f7f0",
               outline:"none",color:"#2a3d2a",resize:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-          <button onClick={()=>onSaveNote(r.id,note)} style={{
+          <button onClick={e=>{e.stopPropagation();onSaveNote(r.id,note);}} style={{
             marginTop:6,padding:"7px 16px",borderRadius:10,border:"none",
             background:"#3A6EA5",color:"white",fontSize:13,fontWeight:700,cursor:"pointer",
           }}>Salvar nota</button>
@@ -142,7 +142,7 @@ function DetailSheet({ r, cat, onClose, onToggle, onDelete, onSaveNote, onSavePh
         <div style={{marginBottom:16}}>
           <div style={{fontSize:12,fontWeight:700,color:"#8aaa8a",marginBottom:6}}>FOTO</div>
           <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handlePhoto}/>
-          <button onClick={()=>fileRef.current.click()} disabled={uploading} style={{
+          <button onClick={e=>{e.stopPropagation();fileRef.current.click();}} disabled={uploading} style={{
             padding:"9px 18px",borderRadius:12,border:"1.5px dashed #b4d4b4",
             background:"rgba(122,190,142,0.08)",color:"#4a8a5a",
             fontSize:13,fontWeight:700,cursor:"pointer",
@@ -338,15 +338,19 @@ export default function App() {
   }
 
   async function saveNote(id, note) {
-    await supabase.from("loculus_reminders").update({ note }).eq("id", id);
-    setReminders(prev => prev.map(r => r.id===id ? {...r, note} : r));
-    if (detailR?.id === id) setDetailR(prev => ({...prev, note}));
+    const { error } = await supabase.from("loculus_reminders").update({ note }).eq("id", id);
+    if (!error) {
+      setReminders(prev => prev.map(r => r.id===id ? {...r, note} : r));
+      setDetailR(prev => prev ? {...prev, note} : prev);
+    } else { console.error("saveNote error:", error); }
   }
 
   async function savePhoto(id, photo_url) {
-    await supabase.from("loculus_reminders").update({ photo_url }).eq("id", id);
-    setReminders(prev => prev.map(r => r.id===id ? {...r, photo_url} : r));
-    if (detailR?.id === id) setDetailR(prev => ({...prev, photo_url}));
+    const { error } = await supabase.from("loculus_reminders").update({ photo_url }).eq("id", id);
+    if (!error) {
+      setReminders(prev => prev.map(r => r.id===id ? {...r, photo_url} : r));
+      setDetailR(prev => prev ? {...prev, photo_url} : prev);
+    } else { console.error("savePhoto error:", error); }
   }
 
   async function addCategory() {
