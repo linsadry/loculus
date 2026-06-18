@@ -234,7 +234,21 @@ function ReminderChip({ r, cat, onToggle, onDelete, compact=false }) {
 
 function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
   nTime,setNTime,nUrgente,setNUrgente,nImportante,setNImportante,
-  onAdd,onClose,inputRef,loading,isDesktop }) {
+  onAdd,onClose,inputRef,loading,isDesktop,onAddCategory }) {
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState("");
+  const [newCatColor, setNewCatColor] = useState("#7DBE8E");
+  const [savingCat, setSavingCat] = useState(false);
+
+  async function handleAddCat() {
+    if (!newCatLabel.trim()) return;
+    setSavingCat(true);
+    const newCat = await onAddCategory(newCatLabel.trim(), newCatColor);
+    if (newCat) { setNCat(newCat.id); }
+    setNewCatLabel(""); setNewCatColor("#7DBE8E");
+    setShowNewCat(false); setSavingCat(false);
+  }
+
   const content = (
     <>
       <div style={{width:36,height:4,background:"#d4dcd4",borderRadius:2,margin:"0 auto 18px"}}/>
@@ -249,7 +263,7 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
         <input type="time" value={nTime} onChange={e=>setNTime(e.target.value)}
           style={{width:90,padding:"8px 10px",borderRadius:12,border:"1.5px solid #d4e4d4",fontSize:13,background:"#f0f7f0",outline:"none",color:"#2a3d2a"}}/>
       </div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:6}}>
         {categories.map(cat=>(
           <button key={cat.id} onClick={()=>setNCat(cat.id)} style={{
             padding:"5px 12px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:12,
@@ -262,7 +276,38 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
             {cat.label}
           </button>
         ))}
+        {/* Botão nova categoria */}
+        <button onClick={()=>setShowNewCat(v=>!v)} style={{
+          padding:"5px 10px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:12,
+          border:`1.5px dashed ${showNewCat?"#3A6EA5":"rgba(0,0,0,0.15)"}`,
+          background:showNewCat?"rgba(58,110,165,0.07)":"transparent",
+          color:showNewCat?"#3A6EA5":"#999",display:"flex",alignItems:"center",gap:3,
+        }}>
+          <span style={{fontSize:16,lineHeight:1}}>+</span> Gaveta
+        </button>
       </div>
+      {/* Mini-form nova categoria */}
+      {showNewCat&&(
+        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:10,
+          padding:"8px 10px",borderRadius:12,background:"rgba(58,110,165,0.05)",
+          border:"1px solid rgba(58,110,165,0.15)"}}>
+          <input placeholder="Nome da categoria" value={newCatLabel}
+            onChange={e=>setNewCatLabel(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&handleAddCat()}
+            style={{flex:1,border:"1px solid #d4e4d4",borderRadius:8,padding:"6px 10px",
+              fontSize:13,outline:"none",background:"white",color:"#2a3d2a"}}/>
+          <input type="color" value={newCatColor} onChange={e=>setNewCatColor(e.target.value)}
+            style={{width:32,height:32,border:"none",borderRadius:8,cursor:"pointer",padding:2,flexShrink:0}}/>
+          <button onClick={handleAddCat} disabled={savingCat||!newCatLabel.trim()} style={{
+            width:32,height:32,borderRadius:8,border:"none",flexShrink:0,
+            background:savingCat||!newCatLabel.trim()?"#ddd":"#3A6EA5",
+            color:"white",fontSize:16,cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",
+          }}>{savingCat?"…":"✓"}</button>
+        </div>
+      )}
+      <div style={{marginBottom:8}}/>
+      
       <div style={{display:"flex",gap:8,marginBottom:14}}>
         <button onClick={()=>setNUrgente(!nUrgente)} style={{
           flex:1,padding:"10px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:13,
@@ -501,7 +546,16 @@ export default function App() {
     </div>
   );
 
-  const AddSheetProps={categories,nText,setNText,nCat,setNCat,nDate,setNDate,nTime,setNTime,nUrgente,setNUrgente,nImportante,setNImportante,onAdd:addReminder,onClose:()=>setShowAdd(false),inputRef,loading:saving};
+  async function addCategoryInline(label, color) {
+    const { data, error } = await supabase.from("loculus_categories").insert({
+      label, color, position: categories.length,
+    }).select().single();
+    if (error) { alert("Erro: " + error.message); return null; }
+    setCategories(prev => [...prev, data]);
+    return data;
+  }
+
+  const AddSheetProps={categories,nText,setNText,nCat,setNCat,nDate,setNDate,nTime,setNTime,nUrgente,setNUrgente,nImportante,setNImportante,onAdd:addReminder,onClose:()=>setShowAdd(false),inputRef,loading:saving,onAddCategory:addCategoryInline};
 
   if(isDesktop) return (
     <div style={{minHeight:"100vh",background:"#f0f4f0",fontFamily:"'Nunito','DM Sans',system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
