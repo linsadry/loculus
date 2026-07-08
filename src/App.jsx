@@ -200,7 +200,7 @@ function CalendarWidget({ reminders, onDaySelect, selectedDay }) {
   );
 }
 
-function ReminderChip({ r, cat, onToggle, onDelete, compact=false }) {
+function ReminderChip({ r, cat, onToggle, onDelete, onEdit, compact=false }) {
   return (
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:compact?4:7}}>
       <div onClick={()=>onToggle(r.id,r.done)} style={{
@@ -222,6 +222,12 @@ function ReminderChip({ r, cat, onToggle, onDelete, compact=false }) {
           display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,
         }}>{r.done?"✓":""}</span>
       </div>
+      <button onClick={()=>onEdit(r)} style={{
+        width:28,height:28,borderRadius:"50%",border:"none",
+        background:"rgba(58,110,165,0.12)",color:"#3A6EA5",
+        fontSize:12,cursor:"pointer",flexShrink:0,
+        display:"flex",alignItems:"center",justifyContent:"center",
+      }}>✏️</button>
       <button onClick={()=>onDelete(r.id)} style={{
         width:28,height:28,borderRadius:"50%",border:"none",
         background:"rgba(212,82,58,0.12)",color:"#D4523A",
@@ -234,7 +240,7 @@ function ReminderChip({ r, cat, onToggle, onDelete, compact=false }) {
 
 function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
   nTime,setNTime,nUrgente,setNUrgente,nImportante,setNImportante,
-  onAdd,onClose,inputRef,loading,isDesktop,onAddCategory }) {
+  onAdd,onClose,inputRef,loading,isDesktop,onAddCategory,isEditing }) {
   const [showNewCat, setShowNewCat] = useState(false);
   const [newCatLabel, setNewCatLabel] = useState("");
   const [newCatColor, setNewCatColor] = useState("#7DBE8E");
@@ -252,7 +258,7 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
   const content = (
     <>
       <div style={{width:36,height:4,background:"#d4dcd4",borderRadius:2,margin:"0 auto 18px"}}/>
-      <div style={{fontSize:15,fontWeight:800,color:"#2a3d2a",marginBottom:14}}>Nova gaveta</div>
+      <div style={{fontSize:15,fontWeight:800,color:"#2a3d2a",marginBottom:14}}>{isEditing?"Editar gaveta":"Nova gaveta"}</div>
       <input ref={inputRef} value={nText} onChange={e=>setNText(e.target.value)}
         onKeyDown={e=>e.key==="Enter"&&onAdd()} placeholder="O que você quer lembrar?"
         style={{width:"100%",padding:"12px 16px",borderRadius:14,border:"1.5px solid #d4e4d4",
@@ -322,7 +328,7 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={onClose} style={{flex:1,padding:"11px",borderRadius:14,border:"1.5px solid #d4e4d4",background:"white",color:"#6a8a72",fontSize:14,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
-        <button onClick={onAdd} disabled={loading} style={{flex:2,padding:"11px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#3A6EA5,#5B8DB8)",color:"white",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 16px rgba(58,110,165,0.32)",opacity:loading?0.7:1}}>{loading?"Salvando…":"Adicionar"}</button>
+        <button onClick={onAdd} disabled={loading} style={{flex:2,padding:"11px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#3A6EA5,#5B8DB8)",color:"white",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 16px rgba(58,110,165,0.32)",opacity:loading?0.7:1}}>{loading?"Salvando…":isEditing?"Salvar":"Adicionar"}</button>
       </div>
     </>
   );
@@ -376,7 +382,19 @@ export default function App() {
   const [nTime,       setNTime]       = useState("09:00");
   const [nUrgente,    setNUrgente]    = useState(false);
   const [nImportante, setNImportante] = useState(false);
+  const [editingId,   setEditingId]   = useState(null);
   const inputRef = useRef(null);
+
+  function startEdit(r){
+    setEditingId(r.id);
+    setNText(r.text);
+    setNCat(r.category_id||"");
+    setNDate(r.date);
+    setNTime((r.time||"09:00:00").slice(0,5));
+    setNUrgente(!!r.urgente);
+    setNImportante(!!r.importante);
+    setShowAdd(true);
+  }
 
   useEffect(()=>{
     async function checkAuth(){
@@ -421,16 +439,25 @@ export default function App() {
     sessionStorage.removeItem("loculus_auth");setAuthState("setup");
   }
 
-  async function addReminder(){
+  async function saveReminder(){
     if(!nText.trim())return;setSaving(true);
     try{
-      const{data,error}=await supabase.from("loculus_reminders").insert({
-        text:nText.trim(),category_id:nCat||null,date:nDate,time:nTime+":00",
-        done:false,urgente:nUrgente,importante:nImportante,
-      }).select().single();
-      if(error)throw error;
-      setReminders(prev=>[...prev,data]);
-      setNText("");setNUrgente(false);setNImportante(false);setNDate(todayStr());setNTime("09:00");setShowAdd(false);
+      if(editingId){
+        const{data,error}=await supabase.from("loculus_reminders").update({
+          text:nText.trim(),category_id:nCat||null,date:nDate,time:nTime+":00",
+          urgente:nUrgente,importante:nImportante,
+        }).eq("id",editingId).select().single();
+        if(error)throw error;
+        setReminders(prev=>prev.map(r=>r.id===editingId?data:r));
+      }else{
+        const{data,error}=await supabase.from("loculus_reminders").insert({
+          text:nText.trim(),category_id:nCat||null,date:nDate,time:nTime+":00",
+          done:false,urgente:nUrgente,importante:nImportante,
+        }).select().single();
+        if(error)throw error;
+        setReminders(prev=>[...prev,data]);
+      }
+      setNText("");setNUrgente(false);setNImportante(false);setNDate(todayStr());setNTime("09:00");setShowAdd(false);setEditingId(null);
     }catch(e){console.error(e);alert("Erro: "+e.message);}finally{setSaving(false);}
   }
 
@@ -500,7 +527,7 @@ export default function App() {
           <div key={date}>
             <div style={{textAlign:"center",fontSize:11,color:"#9aaa9a",fontWeight:700,letterSpacing:"0.07em",textTransform:"uppercase",margin:"10px 0 8px"}}>{formatDateLabel(date)}</div>
             <div style={{display:"flex",flexDirection:"column"}}>
-              {byDate[date].map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder}/>)}
+              {byDate[date].map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} onEdit={startEdit}/>)}
             </div>
           </div>
         ))}
@@ -512,7 +539,7 @@ export default function App() {
       {done.length===0?<div style={{textAlign:"center",color:"#bbb",fontSize:14,marginTop:60}}>Nenhum lembrete concluído 🌿</div>:(
         <>
           <div style={{fontSize:12,color:"#9aaa9a",marginBottom:12,fontWeight:500}}>{done.length} concluído{done.length!==1?"s":""} · apagados automaticamente após 30 dias</div>
-          {done.map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} compact/>)}
+          {done.map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} compact onEdit={startEdit}/>)}
         </>
       )}
     </div>
@@ -555,7 +582,7 @@ export default function App() {
     return data;
   }
 
-  const AddSheetProps={categories,nText,setNText,nCat,setNCat,nDate,setNDate,nTime,setNTime,nUrgente,setNUrgente,nImportante,setNImportante,onAdd:addReminder,onClose:()=>setShowAdd(false),inputRef,loading:saving,onAddCategory:addCategoryInline};
+  const AddSheetProps={categories,nText,setNText,nCat,setNCat,nDate,setNDate,nTime,setNTime,nUrgente,setNUrgente,nImportante,setNImportante,onAdd:saveReminder,onClose:()=>{setShowAdd(false);setEditingId(null);},inputRef,loading:saving,onAddCategory:addCategoryInline,isEditing:!!editingId};
 
   if(isDesktop) return (
     <div style={{minHeight:"100vh",background:"#f0f4f0",fontFamily:"'Nunito','DM Sans',system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
@@ -586,7 +613,7 @@ export default function App() {
               {reminders.filter(r=>r.date===calSelDay).length===0
                 ?<div style={{textAlign:"center",color:"#bbb",fontSize:13,padding:"20px 0"}}>Nenhum lembrete 🌿</div>
                 :<div style={{display:"flex",flexDirection:"column"}}>
-                  {reminders.filter(r=>r.date===calSelDay).map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} compact/>)}
+                  {reminders.filter(r=>r.date===calSelDay).map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} compact onEdit={startEdit}/>)}
                 </div>}
             </div>
           )}
@@ -630,7 +657,7 @@ export default function App() {
                 {reminders.filter(r=>r.date===calSelDay).length===0
                   ?<div style={{textAlign:"center",color:"#bbb",fontSize:13,marginTop:20}}>Nenhum lembrete nesse dia 🌿</div>
                   :<div style={{display:"flex",flexDirection:"column"}}>
-                    {reminders.filter(r=>r.date===calSelDay).map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder}/>)}
+                    {reminders.filter(r=>r.date===calSelDay).map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} onEdit={startEdit}/>)}
                   </div>}
               </>
             ):<div style={{textAlign:"center",color:"#bbb",fontSize:13,marginTop:20}}>Toque em um dia para ver os lembretes</div>}
