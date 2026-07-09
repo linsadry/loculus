@@ -8,22 +8,38 @@ const supabase = createClient(
 
 const IMG_URL = "https://unjbdcjcfqmytapxyvuf.supabase.co/storage/v1/object/public/assets/IMG_8652.png";
 
-async function hashPin(pin) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin + "loculus_salt_2026");
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-}
+/* ============ DESIGN TOKENS ============ */
+const T = {
+  bg: "#F7F7F3",
+  surface: "#FFFFFF",
+  sage: "#7A9B76",
+  olive: "#8D9B4C",
+  terracotta: "#C96D52",
+  coral: "#D96A57",
+  petrol: "#486C78",
+  text: "#2F342F",
+  textSec: "#6C726C",
+  textTert: "#A6ABA3",
+  border: "#ECECE7",
+  radiusLg: 22,
+  radiusMd: 16,
+  radiusSm: 10,
+  shadow: "0 1px 2px rgba(47,52,47,0.05), 0 6px 20px rgba(47,52,47,0.05)",
+  shadowHover: "0 2px 6px rgba(47,52,47,0.07), 0 14px 34px rgba(47,52,47,0.09)",
+  shadowFloat: "0 10px 40px rgba(47,52,47,0.16)",
+  fontDisplay: "'SF Pro Display',-apple-system,BlinkMacSystemFont,'Inter',sans-serif",
+  fontBody: "'SF Pro Text',-apple-system,BlinkMacSystemFont,'Inter',sans-serif",
+};
 
+function hashPin(pin) {
+  return crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin + "loculus_salt_2026"))
+    .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join(""));
+}
 function hexRgb(hex = "#888") {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
   return `${r},${g},${b}`;
 }
-
-function getCat(cats, id) { return cats.find(c => c.id === id) || { color:"#aaa", label:"—" }; }
+function getCat(cats, id) { return cats.find(c => c.id === id) || { color: T.textTert, label: "—" }; }
 function todayStr() { return new Date().toISOString().slice(0,10); }
 function useIsDesktop() {
   const [desk, setDesk] = useState(window.innerWidth >= 900);
@@ -34,41 +50,44 @@ function useIsDesktop() {
   }, []);
   return desk;
 }
-
 function formatDateLabel(dateStr) {
   const t = todayStr();
   const tom = new Date(); tom.setDate(tom.getDate()+1);
   const yest = new Date(); yest.setDate(yest.getDate()-1);
-  if (dateStr === t) return "hoje";
-  if (dateStr === tom.toISOString().slice(0,10)) return "amanhã";
-  if (dateStr === yest.toISOString().slice(0,10)) return "ontem";
+  if (dateStr === t) return "Hoje";
+  if (dateStr === tom.toISOString().slice(0,10)) return "Amanhã";
+  if (dateStr === yest.toISOString().slice(0,10)) return "Ontem";
   const d = new Date(dateStr+"T12:00:00");
-  return d.toLocaleDateString("pt-BR",{weekday:"short",day:"numeric",month:"short"});
+  const s = d.toLocaleDateString("pt-BR",{weekday:"short",day:"numeric",month:"short"});
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
-
-function btnIcon(bg="rgba(42,61,42,0.08)", color="#2a3d2a") {
-  return {
-    width:36, height:36, borderRadius:"50%",
-    background:bg, color, border:"none", cursor:"pointer",
-    display:"flex", alignItems:"center", justifyContent:"center",
-    fontSize:15, fontWeight:700, flexShrink:0,
-  };
+function priorityOf(r) {
+  if (r.urgente) return { label: "Urgente", color: T.coral };
+  if (r.importante) return { label: "Importante", color: T.terracotta };
+  return null;
 }
+const iconBtnStyle = (active=false) => ({
+  width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer",
+  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+  background: active ? "rgba(47,52,47,0.07)" : "transparent",
+  color: T.textSec, fontSize: 13, transition: "background .15s ease",
+});
 
+/* ============ PIN COMPONENTS ============ */
 function PinPad({ value, onChange, onSubmit, error, label, sublabel }) {
   const digits = [1,2,3,4,5,6,7,8,9,null,0,"⌫"];
   return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-      {label && <div style={{fontSize:17,fontWeight:800,color:"#2a3d2a",marginBottom:6,textAlign:"center"}}>{label}</div>}
-      {sublabel && <div style={{fontSize:13,color:"#7a9a7a",marginBottom:24,textAlign:"center"}}>{sublabel}</div>}
-      <div style={{display:"flex",gap:14,marginBottom:32}}>
+      {label && <div style={{fontSize:19,fontWeight:600,color:T.text,marginBottom:6,textAlign:"center",fontFamily:T.fontDisplay,letterSpacing:"-0.3px"}}>{label}</div>}
+      {sublabel && <div style={{fontSize:13,color:T.textSec,marginBottom:28,textAlign:"center"}}>{sublabel}</div>}
+      <div style={{display:"flex",gap:12,marginBottom:32}}>
         {[0,1,2,3,4,5].map(i=>(
-          <div key={i} style={{width:14,height:14,borderRadius:"50%",
-            background:i<value.length?"#3A6EA5":"rgba(58,110,165,0.15)",transition:"background 0.15s ease"}}/>
+          <div key={i} style={{width:9,height:9,borderRadius:"50%",
+            background:i<value.length?T.sage:T.border,transition:"background 0.15s ease"}}/>
         ))}
       </div>
-      {error && <div style={{fontSize:13,color:"#D4523A",fontWeight:600,marginBottom:16,
-        textAlign:"center",background:"rgba(212,82,58,0.08)",padding:"8px 16px",borderRadius:10}}>{error}</div>}
+      {error && <div style={{fontSize:13,color:T.coral,fontWeight:500,marginBottom:16,
+        textAlign:"center",background:`rgba(${hexRgb(T.coral)},0.08)`,padding:"8px 16px",borderRadius:T.radiusSm}}>{error}</div>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,width:240}}>
         {digits.map((d,i)=>(
           <button key={i} onClick={()=>{
@@ -78,15 +97,31 @@ function PinPad({ value, onChange, onSubmit, error, label, sublabel }) {
             const next=value+d; onChange(next);
             if(next.length===6)onSubmit(next);
           }} style={{
-            height:60,borderRadius:18,
-            background:d===null?"transparent":d==="⌫"?"rgba(212,82,58,0.08)":"white",
-            border:d===null?"none":"1.5px solid rgba(58,110,165,0.12)",
-            fontSize:d==="⌫"?20:22,fontWeight:700,color:d==="⌫"?"#D4523A":"#2a3d2a",
+            height:58,borderRadius:T.radiusMd,
+            background:d===null?"transparent":T.surface,
+            border:d===null?"none":`1px solid ${T.border}`,
+            fontSize:19,fontWeight:500,color:d==="⌫"?T.coral:T.text,
             cursor:d===null?"default":"pointer",
-            boxShadow:d!==null&&d!=="⌫"?"0 2px 8px rgba(0,0,0,0.06)":"none",
+            boxShadow:d!==null?T.shadow:"none",
             display:"flex",alignItems:"center",justifyContent:"center",
+            fontFamily:T.fontBody,
           }}>{d===null?"":d}</button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function AuthShell({ children }) {
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,
+      display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.fontBody}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 24px"}}>
+        <div style={{width:72,height:72,borderRadius:20,overflow:"hidden",marginBottom:22,boxShadow:T.shadow}}>
+          <img src={IMG_URL} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+        </div>
+        <div style={{fontSize:26,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,letterSpacing:"-0.5px",marginBottom:36}}>Loculus</div>
+        {children}
       </div>
     </div>
   );
@@ -98,7 +133,7 @@ function PinSetup({ onDone }) {
   const [second,setSecond]=useState("");
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(false);
-  async function handleFirst(pin){if(pin.length===6){setFirst(pin);setStep("confirm");}}
+  function handleFirst(pin){if(pin.length===6){setFirst(pin);setStep("confirm");}}
   async function handleConfirm(pin){
     if(pin.length<6)return;
     if(pin!==first){setError("PINs não conferem.");setSecond("");setStep("create");setFirst("");return;}
@@ -107,18 +142,11 @@ function PinSetup({ onDone }) {
     catch(e){setError("Erro ao salvar PIN.");}finally{setLoading(false);}
   }
   return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#e8f4ef 0%,#f0ede8 60%,#e8e4f0 100%)",
-      display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 24px"}}>
-        <div style={{width:80,height:80,borderRadius:"50%",overflow:"hidden",marginBottom:24,boxShadow:"0 8px 24px rgba(90,120,90,0.15)"}}>
-          <img src={IMG_URL} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-        </div>
-        <div style={{fontSize:32,fontWeight:900,color:"#2a3d2a",fontFamily:"'Georgia',serif",letterSpacing:"-1px",marginBottom:32}}>Loculus</div>
-        {loading?<div style={{color:"#7a9a7a",fontSize:14}}>Salvando PIN…</div>
-          :step==="create"?<PinPad value={first} onChange={setFirst} onSubmit={handleFirst} error={error} label="Crie seu PIN" sublabel="6 dígitos para proteger suas gavetas"/>
-          :<PinPad value={second} onChange={setSecond} onSubmit={handleConfirm} error={error} label="Confirme o PIN" sublabel="Digite novamente para confirmar"/>}
-      </div>
-    </div>
+    <AuthShell>
+      {loading?<div style={{color:T.textSec,fontSize:14}}>Salvando PIN…</div>
+        :step==="create"?<PinPad value={first} onChange={setFirst} onSubmit={handleFirst} error={error} label="Crie seu PIN" sublabel="6 dígitos para proteger seu espaço"/>
+        :<PinPad value={second} onChange={setSecond} onSubmit={handleConfirm} error={error} label="Confirme o PIN" sublabel="Digite novamente para confirmar"/>}
+    </AuthShell>
   );
 }
 
@@ -135,21 +163,15 @@ function PinLogin({ onSuccess, onForgot }) {
     }catch(e){setError("Erro de conexão.");setPin("");}finally{setLoading(false);}
   }
   return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#e8f4ef 0%,#f0ede8 60%,#e8e4f0 100%)",
-      display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 24px"}}>
-        <div style={{width:80,height:80,borderRadius:"50%",overflow:"hidden",marginBottom:24,boxShadow:"0 8px 24px rgba(90,120,90,0.15)"}}>
-          <img src={IMG_URL} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-        </div>
-        <div style={{fontSize:32,fontWeight:900,color:"#2a3d2a",fontFamily:"'Georgia',serif",letterSpacing:"-1px",marginBottom:32}}>Loculus</div>
-        {loading?<div style={{color:"#7a9a7a",fontSize:14}}>Verificando…</div>
-          :<PinPad value={pin} onChange={setPin} onSubmit={handleSubmit} error={error} label="Digite seu PIN" sublabel=""/>}
-        {attempts>=3&&<button onClick={onForgot} style={{marginTop:24,background:"none",border:"none",color:"#D4523A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Esqueci meu PIN</button>}
-      </div>
-    </div>
+    <AuthShell>
+      {loading?<div style={{color:T.textSec,fontSize:14}}>Verificando…</div>
+        :<PinPad value={pin} onChange={setPin} onSubmit={handleSubmit} error={error} label="Digite seu PIN" sublabel=""/>}
+      {attempts>=3&&<button onClick={onForgot} style={{marginTop:24,background:"none",border:"none",color:T.coral,fontSize:13,fontWeight:600,cursor:"pointer"}}>Esqueci meu PIN</button>}
+    </AuthShell>
   );
 }
 
+/* ============ CALENDAR ============ */
 function CalendarWidget({ reminders, onDaySelect, selectedDay }) {
   const [offset,setOffset]=useState(0);
   const WD=["S","T","Q","Q","S","S","D"];
@@ -167,30 +189,30 @@ function CalendarWidget({ reminders, onDaySelect, selectedDay }) {
   const dispMonth=new Date(new Date().getFullYear(),new Date().getMonth()+offset,1);
   const monthLabel=dispMonth.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
   return (
-    <div style={{background:"white",borderRadius:20,padding:16,boxShadow:"0 2px 16px rgba(42,61,42,0.07)",border:"1px solid rgba(42,61,42,0.06)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <button onClick={()=>setOffset(o=>o-1)} style={{...btnIcon(),width:28,height:28,fontSize:13}}>‹</button>
-        <span style={{fontSize:13,fontWeight:700,color:"#2a3d2a",textTransform:"capitalize"}}>{monthLabel}</span>
-        <button onClick={()=>setOffset(o=>o+1)} style={{...btnIcon(),width:28,height:28,fontSize:13}}>›</button>
+    <div style={{background:T.surface,borderRadius:T.radiusLg,padding:18,boxShadow:T.shadow,border:`1px solid ${T.border}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <button onClick={()=>setOffset(o=>o-1)} style={iconBtnStyle()}>‹</button>
+        <span style={{fontSize:14,fontWeight:600,color:T.text,textTransform:"capitalize",fontFamily:T.fontDisplay}}>{monthLabel}</span>
+        <button onClick={()=>setOffset(o=>o+1)} style={iconBtnStyle()}>›</button>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
-        {WD.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:9,fontWeight:700,color:"#9aaa9a"}}>{d}</div>)}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:6}}>
+        {WD.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:10,fontWeight:600,color:T.textTert}}>{d}</div>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
         {monthDays.map((d,i)=>{
           if(!d)return <div key={`e${i}`}/>;
           const dStr=ds(d);const isToday=dStr===todayStr();const isSel=selectedDay===dStr;
-          const count=remsOnDay(d).length;const hasUrgent=remsOnDay(d).some(r=>r.urgente);
+          const dayRems=remsOnDay(d);const count=dayRems.length;const hasUrgent=dayRems.some(r=>r.urgente);
           return (
             <div key={i} onClick={()=>onDaySelect(isSel?null:dStr)} style={{
-              borderRadius:8,padding:"4px 2px",textAlign:"center",cursor:"pointer",minHeight:32,
-              background:isSel?"#3A6EA5":isToday?"#e8f0e8":"transparent",
-              border:`1px solid ${isSel?"#3A6EA5":isToday?"#7DBE8E":"transparent"}`,
+              borderRadius:10,padding:"5px 2px",textAlign:"center",cursor:"pointer",minHeight:34,
+              background:isSel?T.sage:isToday?`rgba(${hexRgb(T.sage)},0.1)`:"transparent",
+              transition:"background .15s ease",
             }}>
-              <div style={{fontSize:12,fontWeight:700,color:isSel?"white":isToday?"#3A6EA5":"#2a3d2a"}}>{d.getDate()}</div>
-              {count>0&&<div style={{display:"flex",gap:1,justifyContent:"center",marginTop:1}}>
-                <div style={{width:4,height:4,borderRadius:"50%",background:isSel?"white":hasUrgent?"#D4523A":"#7DBE8E"}}/>
-                {count>1&&<div style={{width:4,height:4,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.6)":"#9B7EC8"}}/>}
+              <div style={{fontSize:12.5,fontWeight:isToday||isSel?700:500,color:isSel?"white":isToday?T.sage:T.text}}>{d.getDate()}</div>
+              {count>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:2}}>
+                <div style={{width:4,height:4,borderRadius:"50%",background:isSel?"white":hasUrgent?T.coral:T.sage}}/>
+                {count>1&&<div style={{width:4,height:4,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.6)":T.petrol}}/>}
               </div>}
             </div>
           );
@@ -200,166 +222,249 @@ function CalendarWidget({ reminders, onDaySelect, selectedDay }) {
   );
 }
 
-function ReminderChip({ r, cat, onToggle, onDelete, onEdit, compact=false }) {
+/* ============ TASK CARD ============ */
+function TaskCard({ r, cat, onToggle, onDelete, onEdit, compact=false }) {
+  const [hover,setHover]=useState(false);
+  const priority = priorityOf(r);
   return (
-    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:compact?4:7}}>
-      <div onClick={()=>onToggle(r.id,r.done)} style={{
-        flex:1,display:"flex",alignItems:"center",gap:8,
-        padding:compact?"8px 12px":"10px 14px",borderRadius:20,
-        background:r.done?`rgba(${hexRgb(cat.color)},0.25)`:cat.color,
-        color:"white",fontSize:compact?13:14,fontWeight:600,cursor:"pointer",
-        opacity:r.done?0.55:1,textDecoration:r.done?"line-through":"none",
-        boxShadow:r.done?"none":`0 3px 10px rgba(${hexRgb(cat.color)},0.28)`,
-        transition:"all 0.15s ease",
-      }}>
-        <span style={{flex:1}}>{r.text}</span>
-        <span style={{fontSize:11,opacity:0.8}}>{r.time?.slice(0,5)}</span>
-        {r.urgente&&!r.done&&<span style={{fontSize:11}}>⚡</span>}
-        {r.importante&&!r.done&&<span style={{fontSize:11}}>⭐</span>}
-        <span style={{width:18,height:18,borderRadius:"50%",flexShrink:0,
-          border:"1.5px solid rgba(255,255,255,0.55)",
-          background:r.done?"rgba(255,255,255,0.45)":"transparent",
-          display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,
-        }}>{r.done?"✓":""}</span>
+    <div onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} style={{
+      display:"flex",alignItems:"center",gap:12,
+      background:T.surface,borderRadius:T.radiusMd,
+      padding:compact?"10px 12px":"13px 14px",
+      marginBottom:8,border:`1px solid ${T.border}`,
+      borderLeft:`3px solid ${cat.color}`,
+      boxShadow:hover?T.shadowHover:T.shadow,
+      transform:hover?"translateY(-1px)":"none",
+      opacity:r.done?0.5:1,
+      transition:"transform .15s ease, box-shadow .15s ease",
+    }}>
+      <button onClick={()=>onToggle(r.id,r.done)} style={{
+        width:20,height:20,borderRadius:"50%",flexShrink:0,cursor:"pointer",
+        border:`1.5px solid ${r.done?cat.color:T.border}`,
+        background:r.done?cat.color:"transparent",padding:0,
+        display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11,
+        transition:"all .15s ease",
+      }}>{r.done?"✓":""}</button>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:compact?13:14.5,fontWeight:500,color:T.text,
+          textDecoration:r.done?"line-through":"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",
+          fontFamily:T.fontBody}}>{r.text}</div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3}}>
+          <span style={{fontSize:10.5,fontWeight:600,color:cat.color,
+            background:`rgba(${hexRgb(cat.color)},0.1)`,padding:"2px 8px",borderRadius:20}}>{cat.label}</span>
+          {r.time && <span style={{fontSize:11,color:T.textSec}}>{r.time.slice(0,5)}</span>}
+          {priority && <span style={{fontSize:9.5,fontWeight:700,color:priority.color,letterSpacing:"0.04em",textTransform:"uppercase"}}>{priority.label}</span>}
+        </div>
       </div>
-      <button onClick={()=>onEdit(r)} style={{
-        width:28,height:28,borderRadius:"50%",border:"none",
-        background:"rgba(58,110,165,0.12)",color:"#3A6EA5",
-        fontSize:12,cursor:"pointer",flexShrink:0,
-        display:"flex",alignItems:"center",justifyContent:"center",
-      }}>✏️</button>
-      <button onClick={()=>onDelete(r.id)} style={{
-        width:28,height:28,borderRadius:"50%",border:"none",
-        background:"rgba(212,82,58,0.12)",color:"#D4523A",
-        fontSize:14,cursor:"pointer",flexShrink:0,
-        display:"flex",alignItems:"center",justifyContent:"center",
-      }}>×</button>
+      {hover && (
+        <div style={{display:"flex",gap:2}}>
+          <button onClick={()=>onEdit(r)} style={iconBtnStyle()}>✎</button>
+          <button onClick={()=>onDelete(r.id)} style={{...iconBtnStyle(),color:T.coral}}>✕</button>
+        </div>
+      )}
     </div>
   );
 }
 
+/* ============ DASHBOARD ============ */
+function DashboardCards({ active, done, urgentCount, todayCount, overdueCount }) {
+  const items = [
+    { label:"Hoje", value:todayCount, color:T.petrol },
+    { label:"Concluídos", value:done.length, color:T.sage },
+    { label:"Atrasados", value:overdueCount, color:T.terracotta },
+    { label:"Urgentes", value:urgentCount, color:T.coral },
+  ];
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:22}}>
+      {items.map(it=>(
+        <div key={it.label} style={{background:T.surface,borderRadius:T.radiusMd,padding:"14px 16px",
+          border:`1px solid ${T.border}`,boxShadow:T.shadow}}>
+          <div style={{fontSize:24,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,letterSpacing:"-0.5px"}}>{it.value}</div>
+          <div style={{display:"flex",alignItems:"center",gap:5,marginTop:2}}>
+            <div style={{width:6,height:6,borderRadius:"50%",background:it.color}}/>
+            <div style={{fontSize:11.5,color:T.textSec,fontWeight:500}}>{it.label}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ============ ADD / EDIT SHEET ============ */
 function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
   nTime,setNTime,nUrgente,setNUrgente,nImportante,setNImportante,
   onAdd,onClose,inputRef,loading,isDesktop,onAddCategory,isEditing }) {
   const [showNewCat, setShowNewCat] = useState(false);
   const [newCatLabel, setNewCatLabel] = useState("");
-  const [newCatColor, setNewCatColor] = useState("#7DBE8E");
+  const [newCatColor, setNewCatColor] = useState(T.sage);
   const [savingCat, setSavingCat] = useState(false);
+
+  const fieldStyle = {width:"100%",padding:"11px 14px",borderRadius:T.radiusSm,border:`1px solid ${T.border}`,
+    fontSize:14,background:T.bg,outline:"none",color:T.text,boxSizing:"border-box",fontFamily:T.fontBody};
 
   async function handleAddCat() {
     if (!newCatLabel.trim()) return;
     setSavingCat(true);
     const newCat = await onAddCategory(newCatLabel.trim(), newCatColor);
-    if (newCat) { setNCat(newCat.id); }
-    setNewCatLabel(""); setNewCatColor("#7DBE8E");
+    if (newCat) setNCat(newCat.id);
+    setNewCatLabel(""); setNewCatColor(T.sage);
     setShowNewCat(false); setSavingCat(false);
   }
 
   const content = (
     <>
-      <div style={{width:36,height:4,background:"#d4dcd4",borderRadius:2,margin:"0 auto 18px"}}/>
-      <div style={{fontSize:15,fontWeight:800,color:"#2a3d2a",marginBottom:14}}>{isEditing?"Editar gaveta":"Nova gaveta"}</div>
+      <div style={{width:36,height:4,background:T.border,borderRadius:2,margin:"0 auto 20px"}}/>
+      <div style={{fontSize:17,fontWeight:600,color:T.text,marginBottom:16,fontFamily:T.fontDisplay,letterSpacing:"-0.3px"}}>{isEditing?"Editar tarefa":"Nova tarefa"}</div>
       <input ref={inputRef} value={nText} onChange={e=>setNText(e.target.value)}
-        onKeyDown={e=>e.key==="Enter"&&onAdd()} placeholder="O que você quer lembrar?"
-        style={{width:"100%",padding:"12px 16px",borderRadius:14,border:"1.5px solid #d4e4d4",
-          fontSize:14,background:"#f0f7f0",outline:"none",color:"#2a3d2a",boxSizing:"border-box",marginBottom:10}}/>
-      <div style={{display:"flex",gap:8,marginBottom:10}}>
-        <input type="date" value={nDate} onChange={e=>setNDate(e.target.value)}
-          style={{flex:1,padding:"8px 10px",borderRadius:12,border:"1.5px solid #d4e4d4",fontSize:13,background:"#f0f7f0",outline:"none",color:"#2a3d2a"}}/>
-        <input type="time" value={nTime} onChange={e=>setNTime(e.target.value)}
-          style={{width:90,padding:"8px 10px",borderRadius:12,border:"1.5px solid #d4e4d4",fontSize:13,background:"#f0f7f0",outline:"none",color:"#2a3d2a"}}/>
+        onKeyDown={e=>e.key==="Enter"&&onAdd()} placeholder="O que você precisa fazer?"
+        style={{...fieldStyle,marginBottom:10}}/>
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <input type="date" value={nDate} onChange={e=>setNDate(e.target.value)} style={{...fieldStyle,flex:1}}/>
+        <input type="time" value={nTime} onChange={e=>setNTime(e.target.value)} style={{...fieldStyle,width:100}}/>
       </div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:6}}>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
         {categories.map(cat=>(
           <button key={cat.id} onClick={()=>setNCat(cat.id)} style={{
-            padding:"5px 12px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:12,
-            border:nCat===cat.id?"none":"1.5px solid rgba(0,0,0,0.09)",
-            background:nCat===cat.id?cat.color:"white",color:nCat===cat.id?"white":"#555",
-            boxShadow:nCat===cat.id?`0 3px 10px rgba(${hexRgb(cat.color)},0.35)`:"none",
-            display:"flex",alignItems:"center",gap:4,
+            padding:"6px 13px",borderRadius:20,cursor:"pointer",fontWeight:600,fontSize:12,
+            border:nCat===cat.id?"none":`1px solid ${T.border}`,
+            background:nCat===cat.id?cat.color:T.surface,color:nCat===cat.id?"white":T.textSec,
+            display:"flex",alignItems:"center",gap:5,fontFamily:T.fontBody,
           }}>
-            {nCat!==cat.id&&<span style={{width:7,height:7,borderRadius:"50%",background:cat.color,display:"inline-block"}}/>}
+            {nCat!==cat.id&&<span style={{width:6,height:6,borderRadius:"50%",background:cat.color,display:"inline-block"}}/>}
             {cat.label}
           </button>
         ))}
-        {/* Botão nova categoria */}
         <button onClick={()=>setShowNewCat(v=>!v)} style={{
-          padding:"5px 10px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:12,
-          border:`1.5px dashed ${showNewCat?"#3A6EA5":"rgba(0,0,0,0.15)"}`,
-          background:showNewCat?"rgba(58,110,165,0.07)":"transparent",
-          color:showNewCat?"#3A6EA5":"#999",display:"flex",alignItems:"center",gap:3,
-        }}>
-          <span style={{fontSize:16,lineHeight:1}}>+</span> Gaveta
-        </button>
+          padding:"6px 12px",borderRadius:20,cursor:"pointer",fontWeight:600,fontSize:12,
+          border:`1px dashed ${showNewCat?T.sage:T.textTert}`,
+          background:showNewCat?`rgba(${hexRgb(T.sage)},0.07)`:"transparent",
+          color:showNewCat?T.sage:T.textTert,
+        }}>+ Categoria</button>
       </div>
-      {/* Mini-form nova categoria */}
       {showNewCat&&(
-        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:10,
-          padding:"8px 10px",borderRadius:12,background:"rgba(58,110,165,0.05)",
-          border:"1px solid rgba(58,110,165,0.15)"}}>
+        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12,
+          padding:"8px 10px",borderRadius:T.radiusSm,background:T.bg,border:`1px solid ${T.border}`}}>
           <input placeholder="Nome da categoria" value={newCatLabel}
             onChange={e=>setNewCatLabel(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&handleAddCat()}
-            style={{flex:1,border:"1px solid #d4e4d4",borderRadius:8,padding:"6px 10px",
-              fontSize:13,outline:"none",background:"white",color:"#2a3d2a"}}/>
+            style={{...fieldStyle,background:T.surface,padding:"7px 10px"}}/>
           <input type="color" value={newCatColor} onChange={e=>setNewCatColor(e.target.value)}
-            style={{width:32,height:32,border:"none",borderRadius:8,cursor:"pointer",padding:2,flexShrink:0}}/>
+            style={{width:30,height:30,border:"none",borderRadius:8,cursor:"pointer",padding:2,flexShrink:0}}/>
           <button onClick={handleAddCat} disabled={savingCat||!newCatLabel.trim()} style={{
-            width:32,height:32,borderRadius:8,border:"none",flexShrink:0,
-            background:savingCat||!newCatLabel.trim()?"#ddd":"#3A6EA5",
-            color:"white",fontSize:16,cursor:"pointer",
+            width:30,height:30,borderRadius:8,border:"none",flexShrink:0,
+            background:savingCat||!newCatLabel.trim()?T.border:T.sage,
+            color:"white",fontSize:14,cursor:"pointer",
             display:"flex",alignItems:"center",justifyContent:"center",
           }}>{savingCat?"…":"✓"}</button>
         </div>
       )}
-      <div style={{marginBottom:8}}/>
-      
-      <div style={{display:"flex",gap:8,marginBottom:14}}>
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
         <button onClick={()=>setNUrgente(!nUrgente)} style={{
-          flex:1,padding:"10px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:13,
-          border:`1.5px solid ${nUrgente?"#D4523A":"rgba(0,0,0,0.09)"}`,
-          background:nUrgente?"#fdf0ed":"white",color:nUrgente?"#D4523A":"#888",
-        }}>⚡ Urgente</button>
+          flex:1,padding:"10px",borderRadius:T.radiusSm,cursor:"pointer",fontWeight:600,fontSize:13,
+          border:`1px solid ${nUrgente?T.coral:T.border}`,
+          background:nUrgente?`rgba(${hexRgb(T.coral)},0.08)`:T.surface,color:nUrgente?T.coral:T.textSec,
+          fontFamily:T.fontBody,
+        }}>Urgente</button>
         <button onClick={()=>setNImportante(!nImportante)} style={{
-          flex:1,padding:"10px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:13,
-          border:`1.5px solid ${nImportante?"#D4A843":"rgba(0,0,0,0.09)"}`,
-          background:nImportante?"#fdf7e8":"white",color:nImportante?"#D4A843":"#888",
-        }}>⭐ Importante</button>
+          flex:1,padding:"10px",borderRadius:T.radiusSm,cursor:"pointer",fontWeight:600,fontSize:13,
+          border:`1px solid ${nImportante?T.terracotta:T.border}`,
+          background:nImportante?`rgba(${hexRgb(T.terracotta)},0.08)`:T.surface,color:nImportante?T.terracotta:T.textSec,
+          fontFamily:T.fontBody,
+        }}>Importante</button>
       </div>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={onClose} style={{flex:1,padding:"11px",borderRadius:14,border:"1.5px solid #d4e4d4",background:"white",color:"#6a8a72",fontSize:14,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
-        <button onClick={onAdd} disabled={loading} style={{flex:2,padding:"11px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#3A6EA5,#5B8DB8)",color:"white",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 16px rgba(58,110,165,0.32)",opacity:loading?0.7:1}}>{loading?"Salvando…":isEditing?"Salvar":"Adicionar"}</button>
+        <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:T.radiusSm,border:`1px solid ${T.border}`,background:T.surface,color:T.textSec,fontSize:14,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+        <button onClick={onAdd} disabled={loading} style={{flex:2,padding:"12px",borderRadius:T.radiusSm,border:"none",background:T.sage,color:"white",fontSize:14,fontWeight:600,cursor:"pointer",opacity:loading?0.6:1}}>{loading?"Salvando…":isEditing?"Salvar":"Adicionar"}</button>
       </div>
     </>
   );
+
   if(isDesktop) return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}}
+    <div style={{position:"fixed",inset:0,background:"rgba(47,52,47,0.25)",backdropFilter:"blur(4px)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}}
       onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{background:"#fafcfa",borderRadius:24,padding:"28px 28px 32px",width:480,boxShadow:"0 16px 60px rgba(0,0,0,0.15)"}}>{content}</div>
+      <div style={{background:T.surface,borderRadius:T.radiusLg,padding:"26px 26px 28px",width:460,boxShadow:T.shadowFloat}}>{content}</div>
     </div>
   );
   return (
-    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:200,background:"#fafcfa",borderRadius:"24px 24px 0 0",padding:"20px 20px 36px",boxShadow:"0 -8px 40px rgba(42,61,42,0.13)"}}>
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:200,background:T.surface,borderRadius:"24px 24px 0 0",padding:"18px 20px 34px",boxShadow:T.shadowFloat}}>
       {content}
     </div>
+  );
+}
+
+/* ============ CATEGORY EDITOR ============ */
+function CategoryEditor({ categories, editCatId, setEditCatId, editLabel, setEditLabel,
+  editColor, setEditColor, updateCategory, deleteCategory, newCatLabel, setNewCatLabel,
+  newCatColor, setNewCatColor, addCategory }) {
+  return (
+    <div>
+      {categories.map(cat=>(
+        <div key={cat.id} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",
+          borderRadius:T.radiusMd,background:T.surface,marginBottom:8,border:`1px solid ${T.border}`,boxShadow:T.shadow}}>
+          <div style={{width:22,height:22,borderRadius:"50%",background:cat.color,flexShrink:0}}/>
+          {editCatId===cat.id?(
+            <>
+              <input value={editLabel} onChange={e=>setEditLabel(e.target.value)} style={{flex:1,border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 10px",fontSize:14}}/>
+              <input type="color" value={editColor} onChange={e=>setEditColor(e.target.value)} style={{width:30,height:30,border:"none",borderRadius:8,cursor:"pointer",padding:0}}/>
+              <button onClick={()=>updateCategory(cat.id)} style={{...iconBtnStyle(),background:T.sage,color:"white"}}>✓</button>
+            </>
+          ):(
+            <>
+              <span style={{flex:1,fontSize:14,fontWeight:500,color:T.text}}>{cat.label}</span>
+              <button onClick={()=>{setEditCatId(cat.id);setEditLabel(cat.label);setEditColor(cat.color);}} style={iconBtnStyle()}>✎</button>
+              <button onClick={()=>deleteCategory(cat.id)} style={{...iconBtnStyle(),color:T.coral}}>✕</button>
+            </>
+          )}
+        </div>
+      ))}
+      <div style={{padding:"14px 16px",borderRadius:T.radiusMd,marginTop:8,background:T.bg,border:`1px dashed ${T.textTert}`}}>
+        <div style={{fontSize:12.5,fontWeight:600,color:T.sage,marginBottom:10}}>Nova categoria</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <input placeholder="Nome" value={newCatLabel} onChange={e=>setNewCatLabel(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()}
+            style={{flex:1,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",fontSize:14,outline:"none",background:T.surface}}/>
+          <input type="color" value={newCatColor} onChange={e=>setNewCatColor(e.target.value)} style={{width:36,height:36,border:"none",borderRadius:8,cursor:"pointer",padding:2}}/>
+          <button onClick={addCategory} style={{width:36,height:36,borderRadius:8,border:"none",background:T.sage,color:"white",fontSize:16,cursor:"pointer"}}>+</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ NAV (sidebar + mobile bottom bar) ============ */
+function NavItem({ label, count, active, onClick, dot }) {
+  return (
+    <button onClick={onClick} style={{
+      display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",
+      borderRadius:T.radiusSm,border:"none",cursor:"pointer",marginBottom:2,
+      background:active?`rgba(${hexRgb(T.sage)},0.1)`:"transparent",
+      color:active?T.sage:T.text,fontSize:13.5,fontWeight:active?600:500,
+      textAlign:"left",fontFamily:T.fontBody,
+    }}>
+      {dot && <span style={{width:7,height:7,borderRadius:"50%",background:dot,flexShrink:0}}/>}
+      <span style={{flex:1}}>{label}</span>
+      {count>0 && <span style={{fontSize:11,fontWeight:600,color:active?T.sage:T.textTert}}>{count}</span>}
+    </button>
   );
 }
 
 function BottomBar({ screen, onAdd, onMain, onCal, onLock, onDone }) {
   return (
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,
-      background:"rgba(247,249,246,0.97)",backdropFilter:"blur(10px)",
+      background:"rgba(247,247,243,0.92)",backdropFilter:"blur(16px)",
       padding:"10px 24px 28px",display:"flex",alignItems:"center",justifyContent:"space-around",
-      borderTop:"1px solid rgba(42,61,42,0.07)"}}>
-      <button onClick={onLock} style={{...btnIcon(),width:40,height:40,fontSize:16}}>🔒</button>
-      <button onClick={onMain} style={{...btnIcon(screen==="main"?"#3A6EA5":"transparent",screen==="main"?"white":"#6a8a72"),width:40,height:40,fontSize:16}}>🏠</button>
-      <button onClick={onAdd} style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#3A6EA5,#5B8DB8)",color:"white",fontSize:26,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 20px rgba(58,110,165,0.4)"}}>+</button>
-      <button onClick={onCal} style={{...btnIcon(screen==="calendar"?"#3A6EA5":"transparent",screen==="calendar"?"white":"#6a8a72"),width:40,height:40,fontSize:16}}>📅</button>
-      <button onClick={onDone} style={{...btnIcon(screen==="done"?"#7DBE8E":"transparent",screen==="done"?"white":"#6a8a72"),width:40,height:40,fontSize:16}}>✅</button>
+      borderTop:`1px solid ${T.border}`}}>
+      <button onClick={onLock} style={iconBtnStyle()}>🔒</button>
+      <button onClick={onMain} style={iconBtnStyle(screen==="main")}>⌂</button>
+      <button onClick={onAdd} style={{width:48,height:48,borderRadius:"50%",background:T.sage,color:"white",
+        fontSize:24,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+        boxShadow:`0 6px 18px rgba(${hexRgb(T.sage)},0.4)`}}>+</button>
+      <button onClick={onCal} style={iconBtnStyle(screen==="calendar")}>▤</button>
+      <button onClick={onDone} style={iconBtnStyle(screen==="done")}>✓</button>
     </div>
   );
 }
 
+/* ============ MAIN APP ============ */
 export default function App() {
   const isDesktop = useIsDesktop();
   const [authState,   setAuthState]   = useState("loading");
@@ -368,14 +473,14 @@ export default function App() {
   const [reminders,   setReminders]   = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [saving,      setSaving]      = useState(false);
-  const [activeCat,   setActiveCat]   = useState("todos");
+  const [activeCat,   setActiveCat]   = useState("hoje");
   const [showAdd,     setShowAdd]     = useState(false);
   const [calSelDay,   setCalSelDay]   = useState(null);
   const [editCatId,   setEditCatId]   = useState(null);
   const [editLabel,   setEditLabel]   = useState("");
-  const [editColor,   setEditColor]   = useState("#7DBE8E");
+  const [editColor,   setEditColor]   = useState(T.sage);
   const [newCatLabel, setNewCatLabel] = useState("");
-  const [newCatColor, setNewCatColor] = useState("#7DBE8E");
+  const [newCatColor, setNewCatColor] = useState(T.sage);
   const [nText,       setNText]       = useState("");
   const [nCat,        setNCat]        = useState("");
   const [nDate,       setNDate]       = useState(todayStr());
@@ -415,7 +520,6 @@ export default function App() {
       setCategories(cats||[]);
       setReminders(rems||[]);
       if(cats?.length)setNCat(cats[0].id);
-      // Auto-delete concluídos com mais de 30 dias
       const cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);
       const cutoffStr=cutoff.toISOString().slice(0,10);
       const old=(rems||[]).filter(r=>r.done&&r.date<cutoffStr);
@@ -478,7 +582,15 @@ export default function App() {
       label:newCatLabel.trim(),color:newCatColor,position:categories.length,
     }).select().single();
     if(error){alert("Erro: "+error.message);return;}
-    setCategories(prev=>[...prev,data]);setNewCatLabel("");setNewCatColor("#7DBE8E");
+    setCategories(prev=>[...prev,data]);setNewCatLabel("");setNewCatColor(T.sage);
+  }
+  async function addCategoryInline(label, color) {
+    const { data, error } = await supabase.from("loculus_categories").insert({
+      label, color, position: categories.length,
+    }).select().single();
+    if (error) { alert("Erro: " + error.message); return null; }
+    setCategories(prev => [...prev, data]);
+    return data;
   }
 
   async function updateCategory(id){
@@ -494,139 +606,133 @@ export default function App() {
 
   const active=reminders.filter(r=>!r.done);
   const done=reminders.filter(r=>r.done);
-  const filtered=activeCat==="todos"?active:activeCat==="urgente"?active.filter(r=>r.urgente):activeCat==="importante"?active.filter(r=>r.importante):active.filter(r=>r.category_id===activeCat);
+  const t = todayStr();
+  const todayCount = active.filter(r=>r.date===t).length;
+  const overdueCount = active.filter(r=>r.date<t).length;
+  const urgentCount = active.filter(r=>r.urgente).length;
+  const importantCount = active.filter(r=>r.importante).length;
+
+  const filtered =
+    activeCat==="hoje" ? active.filter(r=>r.date===t) :
+    activeCat==="proximos" ? active.filter(r=>r.date>t) :
+    activeCat==="todos" ? active :
+    activeCat==="urgente" ? active.filter(r=>r.urgente) :
+    activeCat==="importante" ? active.filter(r=>r.importante) :
+    active.filter(r=>r.category_id===activeCat);
+
   const byDate=filtered.reduce((acc,r)=>{acc[r.date]=acc[r.date]||[];acc[r.date].push(r);return acc;},{});
   const sortedDates=Object.keys(byDate).sort();
-  const urgentCount=active.filter(r=>r.urgente).length;
 
   if(authState==="loading")return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#e8f4ef 0%,#f0ede8 60%,#e8e4f0 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Nunito',system-ui,sans-serif",color:"#7a9a7a",fontSize:14}}>Abrindo gavetas… 🗂️</div>
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.fontBody,color:T.textSec,fontSize:14}}>Carregando…</div>
   );
   if(authState==="setup")return <PinSetup onDone={()=>{setAuthState("ok");loadAll();}}/>;
   if(authState==="login")return <PinLogin onSuccess={()=>{setAuthState("ok");loadAll();}} onForgot={handleForgotPin}/>;
 
-  const FilterChips=(
-    <div style={{display:"flex",gap:6,padding:"0 0 12px",overflowX:"auto",scrollbarWidth:"none",flexShrink:0}}>
-      {[{id:"todos",label:"Todos",color:"#4a6a4a"},{id:"urgente",label:"⚡ Urgentes",color:"#D4523A"},{id:"importante",label:"⭐ Importantes",color:"#D4A843"}].map(f=>{
-        const isActive=activeCat===f.id;
-        return <button key={f.id} onClick={()=>setActiveCat(f.id)} style={{flexShrink:0,padding:"7px 13px",borderRadius:20,cursor:"pointer",border:isActive?"none":"1.5px solid rgba(0,0,0,0.09)",background:isActive?f.color:"white",color:isActive?"white":"#555",fontSize:12,fontWeight:700,whiteSpace:"nowrap",boxShadow:isActive?`0 4px 12px rgba(${hexRgb(f.color)},0.35)`:"none"}}>{f.label}</button>;
-      })}
-      {categories.map(cat=>{
-        const isActive=activeCat===cat.id;
-        return <button key={cat.id} onClick={()=>setActiveCat(cat.id)} style={{flexShrink:0,padding:"7px 13px",borderRadius:20,cursor:"pointer",border:isActive?"none":"1.5px solid rgba(0,0,0,0.09)",background:isActive?cat.color:"white",color:isActive?"white":"#444",fontSize:12,fontWeight:700,whiteSpace:"nowrap",boxShadow:isActive?`0 4px 12px rgba(${hexRgb(cat.color)},0.35)`:"none",display:"flex",alignItems:"center",gap:5}}>
-          {!isActive&&<span style={{width:7,height:7,borderRadius:"50%",background:cat.color,display:"inline-block"}}/>}{cat.label}</button>;
-      })}
-    </div>
-  );
-
-  const ReminderList=(
-    <>
-      {loading?<div style={{textAlign:"center",color:"#bbb",fontSize:14,marginTop:60}}>Abrindo gavetas… 🗂️</div>
-        :sortedDates.length===0?<div style={{textAlign:"center",color:"#bbb",fontSize:14,marginTop:60}}>Nenhum lembrete aqui 🌿</div>
-        :sortedDates.map(date=>(
-          <div key={date}>
-            <div style={{textAlign:"center",fontSize:11,color:"#9aaa9a",fontWeight:700,letterSpacing:"0.07em",textTransform:"uppercase",margin:"10px 0 8px"}}>{formatDateLabel(date)}</div>
-            <div style={{display:"flex",flexDirection:"column"}}>
-              {byDate[date].map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} onEdit={startEdit}/>)}
-            </div>
-          </div>
-        ))}
-    </>
-  );
-
-  const DoneDrawer=(
-    <div style={{flex:1,overflowY:"auto",scrollbarWidth:"none"}}>
-      {done.length===0?<div style={{textAlign:"center",color:"#bbb",fontSize:14,marginTop:60}}>Nenhum lembrete concluído 🌿</div>:(
-        <>
-          <div style={{fontSize:12,color:"#9aaa9a",marginBottom:12,fontWeight:500}}>{done.length} concluído{done.length!==1?"s":""} · apagados automaticamente após 30 dias</div>
-          {done.map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} compact onEdit={startEdit}/>)}
-        </>
-      )}
-    </div>
-  );
-
-  const CatEditor=(
-    <div style={{flex:1,overflowY:"auto",padding:"0 0 40px",scrollbarWidth:"none"}}>
-      {categories.map(cat=>(
-        <div key={cat.id} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:16,background:"white",marginBottom:8,boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-          <div style={{width:26,height:26,borderRadius:"50%",background:cat.color,flexShrink:0}}/>
-          {editCatId===cat.id?(
-            <><input value={editLabel} onChange={e=>setEditLabel(e.target.value)} style={{flex:1,border:"1px solid #ddd",borderRadius:8,padding:"4px 8px",fontSize:14}}/>
-            <input type="color" value={editColor} onChange={e=>setEditColor(e.target.value)} style={{width:32,height:32,border:"none",borderRadius:8,cursor:"pointer",padding:0}}/>
-            <button onClick={()=>updateCategory(cat.id)} style={{...btnIcon("#3A6EA5","white"),fontSize:12,width:32,height:32}}>✓</button></>
-          ):(
-            <><span style={{flex:1,fontSize:15,fontWeight:600,color:"#2a3d2a"}}>{cat.label}</span>
-            <button onClick={()=>{setEditCatId(cat.id);setEditLabel(cat.label);setEditColor(cat.color);}} style={btnIcon()}>✏️</button>
-            <button onClick={()=>deleteCategory(cat.id)} style={btnIcon()}>🗑️</button></>
-          )}
-        </div>
-      ))}
-      <div style={{padding:"14px 16px",borderRadius:16,marginTop:8,background:"rgba(58,110,165,0.07)",border:"1.5px dashed rgba(58,110,165,0.3)"}}>
-        <div style={{fontSize:13,fontWeight:700,color:"#3A6EA5",marginBottom:10}}>Nova gaveta</div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <input placeholder="Nome" value={newCatLabel} onChange={e=>setNewCatLabel(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()}
-            style={{flex:1,border:"1px solid #ddd",borderRadius:10,padding:"8px 12px",fontSize:14,outline:"none"}}/>
-          <input type="color" value={newCatColor} onChange={e=>setNewCatColor(e.target.value)} style={{width:38,height:38,border:"none",borderRadius:10,cursor:"pointer",padding:2}}/>
-          <button onClick={addCategory} style={{...btnIcon("#3A6EA5","white"),width:38,height:38,fontSize:18}}>+</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  async function addCategoryInline(label, color) {
-    const { data, error } = await supabase.from("loculus_categories").insert({
-      label, color, position: categories.length,
-    }).select().single();
-    if (error) { alert("Erro: " + error.message); return null; }
-    setCategories(prev => [...prev, data]);
-    return data;
-  }
-
   const AddSheetProps={categories,nText,setNText,nCat,setNCat,nDate,setNDate,nTime,setNTime,nUrgente,setNUrgente,nImportante,setNImportante,onAdd:saveReminder,onClose:()=>{setShowAdd(false);setEditingId(null);},inputRef,loading:saving,onAddCategory:addCategoryInline,isEditing:!!editingId};
 
-  if(isDesktop) return (
-    <div style={{minHeight:"100vh",background:"#f0f4f0",fontFamily:"'Nunito','DM Sans',system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
-      <div style={{background:"white",borderBottom:"1px solid rgba(42,61,42,0.07)",padding:"12px 32px",display:"flex",alignItems:"center",gap:16,flexShrink:0}}>
-        <div style={{width:36,height:36,borderRadius:"50%",overflow:"hidden",cursor:"pointer"}} onClick={()=>setScreen("main")}>
-          <img src={IMG_URL} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-        </div>
-        <span style={{fontSize:20,fontWeight:900,color:"#2a3d2a",fontFamily:"'Georgia',serif",letterSpacing:"-0.5px"}}>Loculus</span>
-        <div style={{flex:1}}/>
-        {[{k:"main",label:"🏠 Gavetas"},{k:"done",label:"✅ Concluídos"},{k:"catEdit",label:"🗂️ Editar"}].map(t=>(
-          <button key={t.k} onClick={()=>setScreen(t.k)} style={{padding:"7px 16px",borderRadius:12,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:screen===t.k?"#3A6EA5":"transparent",color:screen===t.k?"white":"#6a8a72"}}>{t.label}</button>
-        ))}
-        <button onClick={()=>setShowAdd(true)} style={{padding:"8px 20px",borderRadius:12,border:"none",cursor:"pointer",fontSize:13,fontWeight:700,background:"linear-gradient(135deg,#3A6EA5,#5B8DB8)",color:"white",boxShadow:"0 4px 12px rgba(58,110,165,0.3)"}}>+ Novo</button>
-        <button onClick={lock} style={{...btnIcon(),fontSize:16}}>🔒</button>
-        {urgentCount>0&&<div style={{padding:"4px 10px",borderRadius:20,background:"#D4523A",color:"white",fontSize:12,fontWeight:700}}>⚡ {urgentCount}</div>}
+  const TaskList = (dates, source) => (
+    loading ? <div style={{textAlign:"center",color:T.textTert,fontSize:14,marginTop:60}}>Carregando…</div>
+    : dates.length===0 ? (
+      <div style={{textAlign:"center",color:T.textTert,fontSize:14,marginTop:60,padding:"40px 20px"}}>
+        <div style={{fontSize:32,marginBottom:10,opacity:0.4}}>◌</div>
+        <div>Tudo organizado por aqui</div>
       </div>
-      <div style={{flex:1,display:"flex",gap:0,overflow:"hidden"}}>
-        <div style={{flex:1,overflowY:"auto",padding:"24px 32px",scrollbarWidth:"none"}}>
-          {screen==="main"&&<>{FilterChips}{ReminderList}</>}
-          {screen==="done"&&<><div style={{fontSize:18,fontWeight:800,color:"#2a3d2a",marginBottom:16}}>Gaveta de Concluídos</div>{DoneDrawer}</>}
-          {screen==="catEdit"&&<><div style={{fontSize:18,fontWeight:800,color:"#2a3d2a",marginBottom:16}}>Editar Gavetas</div>{CatEditor}</>}
+    ) : dates.map(date=>(
+      <div key={date}>
+        <div style={{fontSize:11,color:T.textTert,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",margin:"14px 0 8px"}}>{formatDateLabel(date)}</div>
+        {source[date].map(r=><TaskCard key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} onEdit={startEdit}/>)}
+      </div>
+    ))
+  );
+
+  const DoneList = (
+    done.length===0
+      ? <div style={{textAlign:"center",color:T.textTert,fontSize:14,marginTop:60}}>Nenhuma tarefa concluída</div>
+      : <>
+          <div style={{fontSize:12,color:T.textSec,marginBottom:12}}>{done.length} concluída{done.length!==1?"s":""} · apagadas automaticamente após 30 dias</div>
+          {done.map(r=><TaskCard key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} onEdit={startEdit} compact/>)}
+        </>
+  );
+
+  const navItems = [
+    { id:"hoje", label:"Hoje", count:todayCount },
+    { id:"proximos", label:"Próximos", count:active.filter(r=>r.date>t).length },
+    { id:"todos", label:"Todos", count:active.length },
+    { id:"urgente", label:"Urgentes", count:urgentCount, dot:T.coral },
+    { id:"importante", label:"Importantes", count:importantCount, dot:T.terracotta },
+  ];
+
+  if(isDesktop) return (
+    <div style={{minHeight:"100vh",background:T.bg,fontFamily:T.fontBody,display:"flex"}}>
+      {/* SIDEBAR */}
+      <div style={{width:220,flexShrink:0,borderRight:`1px solid ${T.border}`,padding:"22px 14px",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"0 8px",marginBottom:26,cursor:"pointer"}} onClick={()=>setScreen("main")}>
+          <div style={{width:30,height:30,borderRadius:9,overflow:"hidden"}}><img src={IMG_URL} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>
+          <span style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,letterSpacing:"-0.3px"}}>Loculus</span>
         </div>
-        <div style={{width:300,flexShrink:0,padding:"24px 24px 24px 0",overflowY:"auto",scrollbarWidth:"none"}}>
-          <CalendarWidget reminders={reminders} onDaySelect={setCalSelDay} selectedDay={calSelDay}/>
-          {calSelDay&&(
-            <div style={{marginTop:16}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#9aaa9a",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>{formatDateLabel(calSelDay)}</div>
-              {reminders.filter(r=>r.date===calSelDay).length===0
-                ?<div style={{textAlign:"center",color:"#bbb",fontSize:13,padding:"20px 0"}}>Nenhum lembrete 🌿</div>
-                :<div style={{display:"flex",flexDirection:"column"}}>
-                  {reminders.filter(r=>r.date===calSelDay).map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} compact onEdit={startEdit}/>)}
-                </div>}
+        <button onClick={()=>setShowAdd(true)} style={{margin:"0 4px 20px",padding:"9px 14px",borderRadius:T.radiusSm,border:"none",
+          background:T.sage,color:"white",fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:16,lineHeight:1}}>+</span> Nova tarefa
+        </button>
+        <div style={{padding:"0 4px"}}>
+          {navItems.map(n=><NavItem key={n.id} label={n.label} count={n.count} dot={n.dot} active={screen==="main"&&activeCat===n.id} onClick={()=>{setScreen("main");setActiveCat(n.id);}}/>)}
+        </div>
+        <div style={{fontSize:10.5,fontWeight:700,color:T.textTert,textTransform:"uppercase",letterSpacing:"0.06em",margin:"20px 8px 6px"}}>Categorias</div>
+        <div style={{padding:"0 4px",flex:1,overflowY:"auto"}}>
+          {categories.map(cat=>(
+            <NavItem key={cat.id} label={cat.label} count={active.filter(r=>r.category_id===cat.id).length} dot={cat.color} active={screen==="main"&&activeCat===cat.id} onClick={()=>{setScreen("main");setActiveCat(cat.id);}}/>
+          ))}
+        </div>
+        <div style={{padding:"0 4px",marginTop:8,display:"flex",flexDirection:"column",gap:2}}>
+          <NavItem label="Concluídos" active={screen==="done"} onClick={()=>setScreen("done")}/>
+          <NavItem label="Editar categorias" active={screen==="catEdit"} onClick={()=>setScreen("catEdit")}/>
+          <NavItem label="Bloquear" onClick={lock}/>
+        </div>
+      </div>
+
+      {/* MAIN */}
+      <div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
+        {screen==="main" && (
+          <>
+            <div style={{fontSize:24,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,letterSpacing:"-0.5px",marginBottom:18,textTransform:"capitalize"}}>
+              {navItems.find(n=>n.id===activeCat)?.label || getCat(categories,activeCat).label}
             </div>
-          )}
-          <div style={{marginTop:16,background:"white",borderRadius:16,padding:14,boxShadow:"0 2px 8px rgba(42,61,42,0.06)"}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#9aaa9a",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Resumo</div>
-            <div style={{display:"flex",gap:8}}>
-              {[{label:"Pendentes",value:active.length,color:"#3A6EA5"},{label:"Urgentes",value:urgentCount,color:"#D4523A"},{label:"Concluídos",value:done.length,color:"#7DBE8E"}].map(s=>(
-                <div key={s.label} style={{flex:1,textAlign:"center",padding:"8px 4px",borderRadius:10,background:`rgba(${hexRgb(s.color)},0.07)`}}>
-                  <div style={{fontSize:22,fontWeight:900,color:s.color}}>{s.value}</div>
-                  <div style={{fontSize:10,color:"#9aaa9a",marginTop:2}}>{s.label}</div>
+            <DashboardCards active={active} done={done} urgentCount={urgentCount} todayCount={todayCount} overdueCount={overdueCount}/>
+            {TaskList(sortedDates, byDate)}
+          </>
+        )}
+        {screen==="done" && (<><div style={{fontSize:22,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,marginBottom:18}}>Concluídos</div>{DoneList}</>)}
+        {screen==="catEdit" && (<><div style={{fontSize:22,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,marginBottom:18}}>Categorias</div>
+          <CategoryEditor categories={categories} editCatId={editCatId} setEditCatId={setEditCatId} editLabel={editLabel} setEditLabel={setEditLabel}
+            editColor={editColor} setEditColor={setEditColor} updateCategory={updateCategory} deleteCategory={deleteCategory}
+            newCatLabel={newCatLabel} setNewCatLabel={setNewCatLabel} newCatColor={newCatColor} setNewCatColor={setNewCatColor} addCategory={addCategory}/>
+        </>)}
+      </div>
+
+      {/* RIGHT SIDEBAR */}
+      <div style={{width:290,flexShrink:0,padding:"28px 28px 28px 0",overflowY:"auto"}}>
+        <CalendarWidget reminders={reminders} onDaySelect={setCalSelDay} selectedDay={calSelDay}/>
+        {calSelDay&&(
+          <div style={{marginTop:16}}>
+            <div style={{fontSize:11,fontWeight:700,color:T.textTert,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>{formatDateLabel(calSelDay)}</div>
+            {reminders.filter(r=>r.date===calSelDay).length===0
+              ?<div style={{textAlign:"center",color:T.textTert,fontSize:13,padding:"16px 0"}}>Nenhuma tarefa</div>
+              :reminders.filter(r=>r.date===calSelDay).map(r=><TaskCard key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} onEdit={startEdit} compact/>)}
+          </div>
+        )}
+        <div style={{marginTop:16,background:T.surface,borderRadius:T.radiusLg,padding:16,border:`1px solid ${T.border}`,boxShadow:T.shadow}}>
+          <div style={{fontSize:11,fontWeight:700,color:T.textTert,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Resumo</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {[{label:"Pendentes",value:active.length,color:T.petrol},{label:"Urgentes",value:urgentCount,color:T.coral},{label:"Concluídos",value:done.length,color:T.sage}].map(s=>(
+              <div key={s.label} style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:s.color}}/>
+                  <span style={{fontSize:12.5,color:T.textSec}}>{s.label}</span>
                 </div>
-              ))}
-            </div>
+                <span style={{fontSize:14,fontWeight:700,color:T.text}}>{s.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -634,48 +740,67 @@ export default function App() {
     </div>
   );
 
+  /* ============ MOBILE ============ */
   return (
-    <div style={{minHeight:"100vh",background:"#f7f9f6",fontFamily:"'Nunito','DM Sans',system-ui,sans-serif",maxWidth:480,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 20px 10px",flexShrink:0}}>
-        <div style={{width:36,height:36,borderRadius:"50%",overflow:"hidden",cursor:"pointer"}} onClick={()=>setScreen("main")}>
+    <div style={{minHeight:"100vh",background:T.bg,fontFamily:T.fontBody,maxWidth:480,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"18px 18px 8px",flexShrink:0}}>
+        <div style={{width:32,height:32,borderRadius:9,overflow:"hidden",cursor:"pointer"}} onClick={()=>setScreen("main")}>
           <img src={IMG_URL} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
         </div>
-        <span style={{fontSize:20,fontWeight:900,color:"#2a3d2a",fontFamily:"'Georgia',serif",letterSpacing:"-0.5px"}}>Loculus</span>
+        <span style={{fontSize:17,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,letterSpacing:"-0.3px"}}>Loculus</span>
         <div style={{position:"relative"}}>
-          <button onClick={()=>setScreen("catEdit")} style={btnIcon()}>🗂️</button>
-          {urgentCount>0&&<div style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:"#D4523A",color:"white",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #f7f9f6"}}>{urgentCount}</div>}
+          <button onClick={()=>setScreen("catEdit")} style={iconBtnStyle()}>⚙</button>
+          {urgentCount>0&&<div style={{position:"absolute",top:-2,right:-2,width:15,height:15,borderRadius:"50%",background:T.coral,color:"white",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${T.bg}`}}>{urgentCount}</div>}
         </div>
       </div>
-      <div style={{flex:1,overflowY:"auto",padding:"0 14px",scrollbarWidth:"none"}}>
-        {screen==="main"&&<>{FilterChips}{ReminderList}</>}
-        {screen==="calendar"&&(
+
+      <div style={{display:"flex",gap:6,padding:"8px 16px 14px",overflowX:"auto"}}>
+        {navItems.map(n=>(
+          <button key={n.id} onClick={()=>setActiveCat(n.id)} style={{
+            flexShrink:0,padding:"7px 14px",borderRadius:20,cursor:"pointer",
+            border:activeCat===n.id?"none":`1px solid ${T.border}`,
+            background:activeCat===n.id?T.sage:T.surface,color:activeCat===n.id?"white":T.textSec,
+            fontSize:12.5,fontWeight:600,whiteSpace:"nowrap",
+          }}>{n.label}</button>
+        ))}
+        {categories.map(cat=>(
+          <button key={cat.id} onClick={()=>setActiveCat(cat.id)} style={{
+            flexShrink:0,padding:"7px 14px",borderRadius:20,cursor:"pointer",
+            border:activeCat===cat.id?"none":`1px solid ${T.border}`,
+            background:activeCat===cat.id?cat.color:T.surface,color:activeCat===cat.id?"white":T.textSec,
+            fontSize:12.5,fontWeight:600,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5,
+          }}>{activeCat!==cat.id&&<span style={{width:6,height:6,borderRadius:"50%",background:cat.color}}/>}{cat.label}</button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",padding:"0 16px"}}>
+        {screen==="main" && <>
+          <DashboardCards active={active} done={done} urgentCount={urgentCount} todayCount={todayCount} overdueCount={overdueCount}/>
+          {TaskList(sortedDates, byDate)}
+        </>}
+        {screen==="calendar" && (
           <>
             <div style={{marginBottom:16}}><CalendarWidget reminders={reminders} onDaySelect={setCalSelDay} selectedDay={calSelDay}/></div>
             {calSelDay?(
               <>
-                <div style={{fontSize:12,fontWeight:700,color:"#9aaa9a",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>{formatDateLabel(calSelDay)}</div>
+                <div style={{fontSize:11,fontWeight:700,color:T.textTert,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>{formatDateLabel(calSelDay)}</div>
                 {reminders.filter(r=>r.date===calSelDay).length===0
-                  ?<div style={{textAlign:"center",color:"#bbb",fontSize:13,marginTop:20}}>Nenhum lembrete nesse dia 🌿</div>
-                  :<div style={{display:"flex",flexDirection:"column"}}>
-                    {reminders.filter(r=>r.date===calSelDay).map(r=><ReminderChip key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} onEdit={startEdit}/>)}
-                  </div>}
+                  ?<div style={{textAlign:"center",color:T.textTert,fontSize:13,marginTop:20}}>Nenhuma tarefa nesse dia</div>
+                  :reminders.filter(r=>r.date===calSelDay).map(r=><TaskCard key={r.id} r={r} cat={getCat(categories,r.category_id)} onToggle={toggleDone} onDelete={deleteReminder} onEdit={startEdit}/>)}
               </>
-            ):<div style={{textAlign:"center",color:"#bbb",fontSize:13,marginTop:20}}>Toque em um dia para ver os lembretes</div>}
+            ):<div style={{textAlign:"center",color:T.textTert,fontSize:13,marginTop:20}}>Toque em um dia para ver as tarefas</div>}
           </>
         )}
-        {screen==="done"&&(
-          <>
-            <div style={{fontSize:16,fontWeight:800,color:"#2a3d2a",marginBottom:12,paddingTop:4}}>Gaveta de Concluídos</div>
-            {DoneDrawer}
-          </>
-        )}
-        {screen==="catEdit"&&(
+        {screen==="done" && (<><div style={{fontSize:16,fontWeight:700,color:T.text,marginBottom:12,paddingTop:4,fontFamily:T.fontDisplay}}>Concluídos</div>{DoneList}</>)}
+        {screen==="catEdit" && (
           <>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,paddingTop:4}}>
-              <button onClick={()=>setScreen("main")} style={btnIcon()}>←</button>
-              <span style={{fontSize:16,fontWeight:800,color:"#2a3d2a"}}>Editar Gavetas</span>
+              <button onClick={()=>setScreen("main")} style={iconBtnStyle()}>←</button>
+              <span style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:T.fontDisplay}}>Categorias</span>
             </div>
-            {CatEditor}
+            <CategoryEditor categories={categories} editCatId={editCatId} setEditCatId={setEditCatId} editLabel={editLabel} setEditLabel={setEditLabel}
+              editColor={editColor} setEditColor={setEditColor} updateCategory={updateCategory} deleteCategory={deleteCategory}
+              newCatLabel={newCatLabel} setNewCatLabel={setNewCatLabel} newCatColor={newCatColor} setNewCatColor={setNewCatColor} addCategory={addCategory}/>
           </>
         )}
         <div style={{height:100}}/>
