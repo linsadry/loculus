@@ -345,12 +345,12 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
           border:`1px dashed ${showNewCat?T.sage:T.textTert}`,
           background:showNewCat?`rgba(${hexRgb(T.sage)},0.07)`:"transparent",
           color:showNewCat?T.sage:T.textTert,display:"flex",alignItems:"center",gap:4,
-        }}><Plus size={12} strokeWidth={2.5}/> Categoria</button>
+        }}><Plus size={12} strokeWidth={2.5}/> Gaveta</button>
       </div>
       {showNewCat&&(
         <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12,
           padding:"8px 10px",borderRadius:T.radiusSm,background:T.bg,border:`1px solid ${T.border}`}}>
-          <input placeholder="Nome da categoria" value={newCatLabel}
+          <input placeholder="Nome da gaveta" value={newCatLabel}
             onChange={e=>setNewCatLabel(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&handleAddCat()}
             style={{...fieldStyle,background:T.surface,padding:"7px 10px"}}/>
@@ -398,7 +398,7 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
   );
 }
 
-/* ============ CATEGORY EDITOR ============ */
+/* ============ GAVETA (CATEGORY) EDITOR ============ */
 function CategoryEditor({ categories, editCatId, setEditCatId, editLabel, setEditLabel,
   editColor, setEditColor, updateCategory, deleteCategory, newCatLabel, setNewCatLabel,
   newCatColor, setNewCatColor, addCategory }) {
@@ -424,7 +424,7 @@ function CategoryEditor({ categories, editCatId, setEditCatId, editLabel, setEdi
         </div>
       ))}
       <div style={{padding:"14px 16px",borderRadius:T.radiusMd,marginTop:8,background:T.bg,border:`1px dashed ${T.textTert}`}}>
-        <div style={{fontSize:12.5,fontWeight:600,color:T.sage,marginBottom:10}}>Nova categoria</div>
+        <div style={{fontSize:12.5,fontWeight:600,color:T.sage,marginBottom:10}}>Nova gaveta</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <input placeholder="Nome" value={newCatLabel} onChange={e=>setNewCatLabel(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()}
             style={{flex:1,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",fontSize:14,outline:"none",background:T.surface}}/>
@@ -683,7 +683,7 @@ export default function App() {
         <div style={{padding:"0 4px"}}>
           {navItems.map(n=><NavItem key={n.id} label={n.label} count={n.count} dot={n.dot} active={screen==="main"&&activeCat===n.id} onClick={()=>{setScreen("main");setActiveCat(n.id);}}/>)}
         </div>
-        <div style={{fontSize:10.5,fontWeight:700,color:T.textTert,textTransform:"uppercase",letterSpacing:"0.06em",margin:"20px 8px 6px"}}>Categorias</div>
+        <div style={{fontSize:10.5,fontWeight:700,color:T.textTert,textTransform:"uppercase",letterSpacing:"0.06em",margin:"20px 8px 6px"}}>Gavetas</div>
         <div style={{padding:"0 4px",flex:1,overflowY:"auto"}}>
           {categories.map(cat=>(
             <NavItem key={cat.id} label={cat.label} count={active.filter(r=>r.category_id===cat.id).length} dot={cat.color} active={screen==="main"&&activeCat===cat.id} onClick={()=>{setScreen("main");setActiveCat(cat.id);}}/>
@@ -691,7 +691,7 @@ export default function App() {
         </div>
         <div style={{padding:"0 4px",marginTop:8,display:"flex",flexDirection:"column",gap:2}}>
           <NavItem label="Concluídos" active={screen==="done"} onClick={()=>setScreen("done")}/>
-          <NavItem label="Editar categorias" active={screen==="catEdit"} onClick={()=>setScreen("catEdit")}/>
+          <NavItem label="Editar gavetas" active={screen==="catEdit"} onClick={()=>setScreen("catEdit")}/>
           <NavItem label="Bloquear" onClick={lock}/>
         </div>
       </div>
@@ -707,7 +707,7 @@ export default function App() {
           </>
         )}
         {screen==="done" && (<><div style={{fontSize:22,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,marginBottom:18}}>Concluídos</div>{DoneList}</>)}
-        {screen==="catEdit" && (<><div style={{fontSize:22,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,marginBottom:18}}>Categorias</div>
+        {screen==="catEdit" && (<><div style={{fontSize:22,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,marginBottom:18}}>Gavetas</div>
           <CategoryEditor categories={categories} editCatId={editCatId} setEditCatId={setEditCatId} editLabel={editLabel} setEditLabel={setEditLabel}
             editColor={editColor} setEditColor={setEditColor} updateCategory={updateCategory} deleteCategory={deleteCategory}
             newCatLabel={newCatLabel} setNewCatLabel={setNewCatLabel} newCatColor={newCatColor} setNewCatColor={setNewCatColor} addCategory={addCategory}/>
@@ -798,7 +798,7 @@ export default function App() {
           <>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,paddingTop:4}}>
               <button onClick={()=>setScreen("main")} style={iconBtnStyle()}><ArrowLeft size={17} strokeWidth={1.75}/></button>
-              <span style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:T.fontDisplay}}>Categorias</span>
+              <span style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:T.fontDisplay}}>Gavetas</span>
             </div>
             <CategoryEditor categories={categories} editCatId={editCatId} setEditCatId={setEditCatId} editLabel={editLabel} setEditLabel={setEditLabel}
               editColor={editColor} setEditColor={setEditColor} updateCategory={updateCategory} deleteCategory={deleteCategory}
