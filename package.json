@@ -9,11 +9,13 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.4",
+    "lucide-react": "^0.383.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.3.1"
+    add lucide-react
   }
 }
