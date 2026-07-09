@@ -1,6 +1,6 @@
-import { Home, Calendar, CheckCircle2, Settings, Lock, Plus, Pencil, X, ChevronLeft, ChevronRight, Star, Zap } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createClient } from '@supabase/supabase-js';
+import { Home, Calendar, CheckCircle2, Settings, Lock, Plus, Pencil, X, ChevronLeft, ChevronRight, Star, Zap, Check, ArrowLeft } from "lucide-react";
 
 const supabase = createClient(
   'https://unjbdcjcfqmytapxyvuf.supabase.co',
@@ -71,12 +71,12 @@ const iconBtnStyle = (active=false) => ({
   width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer",
   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   background: active ? "rgba(47,52,47,0.07)" : "transparent",
-  color: T.textSec, fontSize: 13, transition: "background .15s ease",
+  color: active ? T.sage : T.textSec, transition: "background .15s ease",
 });
 
 /* ============ PIN COMPONENTS ============ */
 function PinPad({ value, onChange, onSubmit, error, label, sublabel }) {
-  const digits = [1,2,3,4,5,6,7,8,9,null,0,"⌫"];
+  const digits = [1,2,3,4,5,6,7,8,9,null,0,"del"];
   return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
       {label && <div style={{fontSize:19,fontWeight:600,color:T.text,marginBottom:6,textAlign:"center",fontFamily:T.fontDisplay,letterSpacing:"-0.3px"}}>{label}</div>}
@@ -93,7 +93,7 @@ function PinPad({ value, onChange, onSubmit, error, label, sublabel }) {
         {digits.map((d,i)=>(
           <button key={i} onClick={()=>{
             if(d===null)return;
-            if(d==="⌫"){onChange(value.slice(0,-1));return;}
+            if(d==="del"){onChange(value.slice(0,-1));return;}
             if(value.length>=6)return;
             const next=value+d; onChange(next);
             if(next.length===6)onSubmit(next);
@@ -101,12 +101,12 @@ function PinPad({ value, onChange, onSubmit, error, label, sublabel }) {
             height:58,borderRadius:T.radiusMd,
             background:d===null?"transparent":T.surface,
             border:d===null?"none":`1px solid ${T.border}`,
-            fontSize:19,fontWeight:500,color:d==="⌫"?T.coral:T.text,
+            fontSize:19,fontWeight:500,color:d==="del"?T.coral:T.text,
             cursor:d===null?"default":"pointer",
             boxShadow:d!==null?T.shadow:"none",
             display:"flex",alignItems:"center",justifyContent:"center",
             fontFamily:T.fontBody,
-          }}>{d===null?"":d}</button>
+          }}>{d===null?"":d==="del"?"⌫":d}</button>
         ))}
       </div>
     </div>
@@ -192,10 +192,9 @@ function CalendarWidget({ reminders, onDaySelect, selectedDay }) {
   return (
     <div style={{background:T.surface,borderRadius:T.radiusLg,padding:18,boxShadow:T.shadow,border:`1px solid ${T.border}`}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <button onClick={()=>setOffset(o=>o-1)} style={iconBtnStyle()}><ChevronLeft size={16} strokeWidth={2}/></button>
-<button onClick={()=>setOffset(o=>o+1)} style={iconBtnStyle()}><ChevronRight size={16} strokeWidth={2}/></button>
+        <button onClick={()=>setOffset(o=>o-1)} style={iconBtnStyle()}><ChevronLeft size={16} strokeWidth={1.75}/></button>
         <span style={{fontSize:14,fontWeight:600,color:T.text,textTransform:"capitalize",fontFamily:T.fontDisplay}}>{monthLabel}</span>
-        <button onClick={()=>setOffset(o=>o+1)} style={iconBtnStyle()}>›</button>
+        <button onClick={()=>setOffset(o=>o+1)} style={iconBtnStyle()}><ChevronRight size={16} strokeWidth={1.75}/></button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:6}}>
         {WD.map((d,i)=><div key={i} style={{textAlign:"center",fontSize:10,fontWeight:600,color:T.textTert}}>{d}</div>)}
@@ -244,9 +243,9 @@ function TaskCard({ r, cat, onToggle, onDelete, onEdit, compact=false }) {
         width:20,height:20,borderRadius:"50%",flexShrink:0,cursor:"pointer",
         border:`1.5px solid ${r.done?cat.color:T.border}`,
         background:r.done?cat.color:"transparent",padding:0,
-        display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11,
+        display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",
         transition:"all .15s ease",
-      }}>{r.done?"✓":""}</button>
+      }}>{r.done && <Check size={12} strokeWidth={3}/>}</button>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:compact?13:14.5,fontWeight:500,color:T.text,
           textDecoration:r.done?"line-through":"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",
@@ -255,13 +254,18 @@ function TaskCard({ r, cat, onToggle, onDelete, onEdit, compact=false }) {
           <span style={{fontSize:10.5,fontWeight:600,color:cat.color,
             background:`rgba(${hexRgb(cat.color)},0.1)`,padding:"2px 8px",borderRadius:20}}>{cat.label}</span>
           {r.time && <span style={{fontSize:11,color:T.textSec}}>{r.time.slice(0,5)}</span>}
-          {priority && <span style={{fontSize:9.5,fontWeight:700,color:priority.color,letterSpacing:"0.04em",textTransform:"uppercase"}}>{priority.label}</span>}
+          {priority && (
+            <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9.5,fontWeight:700,color:priority.color,letterSpacing:"0.04em",textTransform:"uppercase"}}>
+              {r.urgente ? <Zap size={10} strokeWidth={2.5}/> : <Star size={10} strokeWidth={2.5}/>}
+              {priority.label}
+            </span>
+          )}
         </div>
       </div>
       {hover && (
         <div style={{display:"flex",gap:2}}>
-          <button onClick={()=>onEdit(r)} style={iconBtnStyle()}><Pencil size={14} strokeWidth={2}/></button>
-<button onClick={()=>onDelete(r.id)} style={{...iconBtnStyle(),color:T.coral}}><X size={15} strokeWidth={2}/></button>
+          <button onClick={()=>onEdit(r)} style={iconBtnStyle()}><Pencil size={14} strokeWidth={1.75}/></button>
+          <button onClick={()=>onDelete(r.id)} style={{...iconBtnStyle(),color:T.coral}}><X size={15} strokeWidth={1.75}/></button>
         </div>
       )}
     </div>
@@ -340,8 +344,8 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
           padding:"6px 12px",borderRadius:20,cursor:"pointer",fontWeight:600,fontSize:12,
           border:`1px dashed ${showNewCat?T.sage:T.textTert}`,
           background:showNewCat?`rgba(${hexRgb(T.sage)},0.07)`:"transparent",
-          color:showNewCat?T.sage:T.textTert,
-        }}>+ Categoria</button>
+          color:showNewCat?T.sage:T.textTert,display:"flex",alignItems:"center",gap:4,
+        }}><Plus size={12} strokeWidth={2.5}/> Categoria</button>
       </div>
       {showNewCat&&(
         <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12,
@@ -355,9 +359,9 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
           <button onClick={handleAddCat} disabled={savingCat||!newCatLabel.trim()} style={{
             width:30,height:30,borderRadius:8,border:"none",flexShrink:0,
             background:savingCat||!newCatLabel.trim()?T.border:T.sage,
-            color:"white",fontSize:14,cursor:"pointer",
+            color:"white",cursor:"pointer",
             display:"flex",alignItems:"center",justifyContent:"center",
-          }}>{savingCat?"…":"✓"}</button>
+          }}>{savingCat?"…":<Check size={14} strokeWidth={2.5}/>}</button>
         </div>
       )}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
@@ -365,14 +369,14 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
           flex:1,padding:"10px",borderRadius:T.radiusSm,cursor:"pointer",fontWeight:600,fontSize:13,
           border:`1px solid ${nUrgente?T.coral:T.border}`,
           background:nUrgente?`rgba(${hexRgb(T.coral)},0.08)`:T.surface,color:nUrgente?T.coral:T.textSec,
-          fontFamily:T.fontBody,
-        }}><Zap size={13} style={{marginRight:4,verticalAlign:-2}}/> Urgente</button>
+          fontFamily:T.fontBody,display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+        }}><Zap size={13} strokeWidth={2}/> Urgente</button>
         <button onClick={()=>setNImportante(!nImportante)} style={{
           flex:1,padding:"10px",borderRadius:T.radiusSm,cursor:"pointer",fontWeight:600,fontSize:13,
           border:`1px solid ${nImportante?T.terracotta:T.border}`,
           background:nImportante?`rgba(${hexRgb(T.terracotta)},0.08)`:T.surface,color:nImportante?T.terracotta:T.textSec,
-          fontFamily:T.fontBody,
-        }}>Importante</button>
+          fontFamily:T.fontBody,display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+        }}><Star size={13} strokeWidth={2}/> Importante</button>
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={onClose} style={{flex:1,padding:"12px",borderRadius:T.radiusSm,border:`1px solid ${T.border}`,background:T.surface,color:T.textSec,fontSize:14,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
@@ -408,13 +412,13 @@ function CategoryEditor({ categories, editCatId, setEditCatId, editLabel, setEdi
             <>
               <input value={editLabel} onChange={e=>setEditLabel(e.target.value)} style={{flex:1,border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 10px",fontSize:14}}/>
               <input type="color" value={editColor} onChange={e=>setEditColor(e.target.value)} style={{width:30,height:30,border:"none",borderRadius:8,cursor:"pointer",padding:0}}/>
-              <button onClick={()=>updateCategory(cat.id)} style={{...iconBtnStyle(),background:T.sage,color:"white"}}>✓</button>
+              <button onClick={()=>updateCategory(cat.id)} style={{...iconBtnStyle(),background:T.sage,color:"white"}}><Check size={14} strokeWidth={2.5}/></button>
             </>
           ):(
             <>
               <span style={{flex:1,fontSize:14,fontWeight:500,color:T.text}}>{cat.label}</span>
-              <button onClick={()=>{setEditCatId(cat.id);setEditLabel(cat.label);setEditColor(cat.color);}} style={iconBtnStyle()}>✎</button>
-              <button onClick={()=>deleteCategory(cat.id)} style={{...iconBtnStyle(),color:T.coral}}>✕</button>
+              <button onClick={()=>{setEditCatId(cat.id);setEditLabel(cat.label);setEditColor(cat.color);}} style={iconBtnStyle()}><Pencil size={14} strokeWidth={1.75}/></button>
+              <button onClick={()=>deleteCategory(cat.id)} style={{...iconBtnStyle(),color:T.coral}}><X size={15} strokeWidth={1.75}/></button>
             </>
           )}
         </div>
@@ -425,7 +429,7 @@ function CategoryEditor({ categories, editCatId, setEditCatId, editLabel, setEdi
           <input placeholder="Nome" value={newCatLabel} onChange={e=>setNewCatLabel(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()}
             style={{flex:1,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",fontSize:14,outline:"none",background:T.surface}}/>
           <input type="color" value={newCatColor} onChange={e=>setNewCatColor(e.target.value)} style={{width:36,height:36,border:"none",borderRadius:8,cursor:"pointer",padding:2}}/>
-          <button onClick={addCategory} style={{width:36,height:36,borderRadius:8,border:"none",background:T.sage,color:"white",fontSize:16,cursor:"pointer"}}>+</button>
+          <button onClick={addCategory} style={{width:36,height:36,borderRadius:8,border:"none",background:T.sage,color:"white",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Plus size={16} strokeWidth={2.5}/></button>
         </div>
       </div>
     </div>
@@ -455,11 +459,13 @@ function BottomBar({ screen, onAdd, onMain, onCal, onLock, onDone }) {
       background:"rgba(247,247,243,0.92)",backdropFilter:"blur(16px)",
       padding:"10px 24px 28px",display:"flex",alignItems:"center",justifyContent:"space-around",
       borderTop:`1px solid ${T.border}`}}>
-      <button onClick={onLock} style={iconBtnStyle()}><Lock size={17} strokeWidth={2}/></button>
-<button onClick={onMain} style={iconBtnStyle(screen==="main")}><Home size={17} strokeWidth={2}/></button>
-<button onClick={onAdd} style={{...}}><Plus size={24} strokeWidth={2.2}/></button>
-<button onClick={onCal} style={iconBtnStyle(screen==="calendar")}><Calendar size={17} strokeWidth={2}/></button>
-<button onClick={onDone} style={iconBtnStyle(screen==="done")}><CheckCircle2 size={17} strokeWidth={2}/></button>
+      <button onClick={onLock} style={iconBtnStyle()}><Lock size={17} strokeWidth={1.75}/></button>
+      <button onClick={onMain} style={iconBtnStyle(screen==="main")}><Home size={17} strokeWidth={1.75}/></button>
+      <button onClick={onAdd} style={{width:48,height:48,borderRadius:"50%",background:T.sage,color:"white",
+        border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+        boxShadow:`0 6px 18px rgba(${hexRgb(T.sage)},0.4)`}}><Plus size={24} strokeWidth={2.2}/></button>
+      <button onClick={onCal} style={iconBtnStyle(screen==="calendar")}><Calendar size={17} strokeWidth={1.75}/></button>
+      <button onClick={onDone} style={iconBtnStyle(screen==="done")}><CheckCircle2 size={17} strokeWidth={1.75}/></button>
     </div>
   );
 }
@@ -665,7 +671,6 @@ export default function App() {
 
   if(isDesktop) return (
     <div style={{minHeight:"100vh",background:T.bg,fontFamily:T.fontBody,display:"flex"}}>
-      {/* SIDEBAR */}
       <div style={{width:220,flexShrink:0,borderRight:`1px solid ${T.border}`,padding:"22px 14px",display:"flex",flexDirection:"column"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"0 8px",marginBottom:26,cursor:"pointer"}} onClick={()=>setScreen("main")}>
           <div style={{width:30,height:30,borderRadius:9,overflow:"hidden"}}><img src={IMG_URL} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>
@@ -673,7 +678,7 @@ export default function App() {
         </div>
         <button onClick={()=>setShowAdd(true)} style={{margin:"0 4px 20px",padding:"9px 14px",borderRadius:T.radiusSm,border:"none",
           background:T.sage,color:"white",fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontSize:16,lineHeight:1}}>+</span> Nova tarefa
+          <Plus size={15} strokeWidth={2.2}/> Nova tarefa
         </button>
         <div style={{padding:"0 4px"}}>
           {navItems.map(n=><NavItem key={n.id} label={n.label} count={n.count} dot={n.dot} active={screen==="main"&&activeCat===n.id} onClick={()=>{setScreen("main");setActiveCat(n.id);}}/>)}
@@ -691,7 +696,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* MAIN */}
       <div style={{flex:1,overflowY:"auto",padding:"28px 32px"}}>
         {screen==="main" && (
           <>
@@ -710,7 +714,6 @@ export default function App() {
         </>)}
       </div>
 
-      {/* RIGHT SIDEBAR */}
       <div style={{width:290,flexShrink:0,padding:"28px 28px 28px 0",overflowY:"auto"}}>
         <CalendarWidget reminders={reminders} onDaySelect={setCalSelDay} selectedDay={calSelDay}/>
         {calSelDay&&(
@@ -740,7 +743,6 @@ export default function App() {
     </div>
   );
 
-  /* ============ MOBILE ============ */
   return (
     <div style={{minHeight:"100vh",background:T.bg,fontFamily:T.fontBody,maxWidth:480,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"18px 18px 8px",flexShrink:0}}>
@@ -749,7 +751,7 @@ export default function App() {
         </div>
         <span style={{fontSize:17,fontWeight:700,color:T.text,fontFamily:T.fontDisplay,letterSpacing:"-0.3px"}}>Loculus</span>
         <div style={{position:"relative"}}>
-          <button onClick={()=>setScreen("catEdit")} style={iconBtnStyle()}>⚙</button>
+          <button onClick={()=>setScreen("catEdit")} style={iconBtnStyle()}><Settings size={17} strokeWidth={1.75}/></button>
           {urgentCount>0&&<div style={{position:"absolute",top:-2,right:-2,width:15,height:15,borderRadius:"50%",background:T.coral,color:"white",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${T.bg}`}}>{urgentCount}</div>}
         </div>
       </div>
@@ -795,7 +797,7 @@ export default function App() {
         {screen==="catEdit" && (
           <>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,paddingTop:4}}>
-              <button onClick={()=>setScreen("main")} style={iconBtnStyle()}>←</button>
+              <button onClick={()=>setScreen("main")} style={iconBtnStyle()}><ArrowLeft size={17} strokeWidth={1.75}/></button>
               <span style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:T.fontDisplay}}>Categorias</span>
             </div>
             <CategoryEditor categories={categories} editCatId={editCatId} setEditCatId={setEditCatId} editLabel={editLabel} setEditLabel={setEditLabel}
