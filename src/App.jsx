@@ -1,3 +1,4 @@
+import { Home, Calendar, CheckCircle2, Settings, Lock, Plus, Pencil, X, ChevronLeft, ChevronRight, Star, Zap } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createClient } from '@supabase/supabase-js';
 
@@ -191,7 +192,8 @@ function CalendarWidget({ reminders, onDaySelect, selectedDay }) {
   return (
     <div style={{background:T.surface,borderRadius:T.radiusLg,padding:18,boxShadow:T.shadow,border:`1px solid ${T.border}`}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <button onClick={()=>setOffset(o=>o-1)} style={iconBtnStyle()}>‹</button>
+        <button onClick={()=>setOffset(o=>o-1)} style={iconBtnStyle()}><ChevronLeft size={16} strokeWidth={2}/></button>
+<button onClick={()=>setOffset(o=>o+1)} style={iconBtnStyle()}><ChevronRight size={16} strokeWidth={2}/></button>
         <span style={{fontSize:14,fontWeight:600,color:T.text,textTransform:"capitalize",fontFamily:T.fontDisplay}}>{monthLabel}</span>
         <button onClick={()=>setOffset(o=>o+1)} style={iconBtnStyle()}>›</button>
       </div>
@@ -258,8 +260,8 @@ function TaskCard({ r, cat, onToggle, onDelete, onEdit, compact=false }) {
       </div>
       {hover && (
         <div style={{display:"flex",gap:2}}>
-          <button onClick={()=>onEdit(r)} style={iconBtnStyle()}>✎</button>
-          <button onClick={()=>onDelete(r.id)} style={{...iconBtnStyle(),color:T.coral}}>✕</button>
+          <button onClick={()=>onEdit(r)} style={iconBtnStyle()}><Pencil size={14} strokeWidth={2}/></button>
+<button onClick={()=>onDelete(r.id)} style={{...iconBtnStyle(),color:T.coral}}><X size={15} strokeWidth={2}/></button>
         </div>
       )}
     </div>
@@ -364,7 +366,7 @@ function AddSheet({ categories,nText,setNText,nCat,setNCat,nDate,setNDate,
           border:`1px solid ${nUrgente?T.coral:T.border}`,
           background:nUrgente?`rgba(${hexRgb(T.coral)},0.08)`:T.surface,color:nUrgente?T.coral:T.textSec,
           fontFamily:T.fontBody,
-        }}>Urgente</button>
+        }}><Zap size={13} style={{marginRight:4,verticalAlign:-2}}/> Urgente</button>
         <button onClick={()=>setNImportante(!nImportante)} style={{
           flex:1,padding:"10px",borderRadius:T.radiusSm,cursor:"pointer",fontWeight:600,fontSize:13,
           border:`1px solid ${nImportante?T.terracotta:T.border}`,
@@ -453,13 +455,11 @@ function BottomBar({ screen, onAdd, onMain, onCal, onLock, onDone }) {
       background:"rgba(247,247,243,0.92)",backdropFilter:"blur(16px)",
       padding:"10px 24px 28px",display:"flex",alignItems:"center",justifyContent:"space-around",
       borderTop:`1px solid ${T.border}`}}>
-      <button onClick={onLock} style={iconBtnStyle()}>🔒</button>
-      <button onClick={onMain} style={iconBtnStyle(screen==="main")}>⌂</button>
-      <button onClick={onAdd} style={{width:48,height:48,borderRadius:"50%",background:T.sage,color:"white",
-        fontSize:24,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
-        boxShadow:`0 6px 18px rgba(${hexRgb(T.sage)},0.4)`}}>+</button>
-      <button onClick={onCal} style={iconBtnStyle(screen==="calendar")}>▤</button>
-      <button onClick={onDone} style={iconBtnStyle(screen==="done")}>✓</button>
+      <button onClick={onLock} style={iconBtnStyle()}><Lock size={17} strokeWidth={2}/></button>
+<button onClick={onMain} style={iconBtnStyle(screen==="main")}><Home size={17} strokeWidth={2}/></button>
+<button onClick={onAdd} style={{...}}><Plus size={24} strokeWidth={2.2}/></button>
+<button onClick={onCal} style={iconBtnStyle(screen==="calendar")}><Calendar size={17} strokeWidth={2}/></button>
+<button onClick={onDone} style={iconBtnStyle(screen==="done")}><CheckCircle2 size={17} strokeWidth={2}/></button>
     </div>
   );
 }
